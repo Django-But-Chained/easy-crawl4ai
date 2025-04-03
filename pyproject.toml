@@ -15,5 +15,6 @@ dependencies = [
     "pypdf2>=3.0.1",
     "rich>=12.0.0",
     "setuptools>=78.1.0",
+    "sqlalchemy>=2.0.40",
     "trafilatura>=2.0.0",
 ]

@@ -22,9 +22,9 @@ except ImportError:
     print("Then restart the application.")
     sys.exit(1)
 
-# Create Flask app
-app = Flask(__name__)
-app.secret_key = os.environ.get("SESSION_SECRET", os.urandom(24).hex())
+# Import app and database
+from app import app, db
+from models import CrawlJob, CrawlResult, Setting
 
 # Default directories
 RESULTS_DIR = Path('./results')
@@ -43,6 +43,19 @@ ensure_directory(DOWNLOADS_DIR)
 def home():
     """Home page route"""
     return render_template('index.html')
+
+@app.route('/jobs')
+def job_list():
+    """List all crawl jobs"""
+    jobs = CrawlJob.query.order_by(CrawlJob.created_at.desc()).all()
+    return render_template('jobs.html', jobs=jobs)
+
+@app.route('/job/<int:job_id>')
+def job_detail(job_id):
+    """View a specific job and its results"""
+    job = CrawlJob.query.get_or_404(job_id)
+    results = CrawlResult.query.filter_by(job_id=job_id).all()
+    return render_template('job_detail.html', job=job, results=results)
 
 @app.route('/crawl', methods=['POST'])
 def run_crawl():
@@ -84,11 +97,38 @@ def run_crawl():
     output_path = Path(output_dir)
     ensure_directory(output_path)
     
+    # Create a new job record
+    job = CrawlJob(
+        crawl_type=crawl_type,
+        url=url if crawl_type != 'multiple' else None,
+        urls=urls if crawl_type == 'multiple' else None,
+        output_dir=str(output_path),
+        format=output_format,
+        use_browser=use_browser,
+        include_images=include_images,
+        include_links=include_links,
+        max_depth=max_depth if crawl_type == 'deep' else None,
+        max_pages=max_pages if crawl_type == 'deep' else None,
+        stay_within_domain=stay_within_domain if crawl_type == 'deep' else None,
+        file_types=file_types if crawl_type == 'files' else None,
+        max_size=max_size if crawl_type == 'files' else None,
+        max_files=max_files if crawl_type == 'files' else None,
+        status='running',
+        created_at=datetime.utcnow()
+    )
+    
+    # Save the job to the database
+    db.session.add(job)
+    db.session.commit()
+    
     try:
         # Import crawl4ai here to avoid startup errors if not installed
         try:
             import crawl4ai
         except ImportError:
+            job.status = 'failed'
+            job.error_message = 'crawl4ai library is not installed'
+            db.session.commit()
             flash('crawl4ai library is not installed. Please install with: pip install crawl4ai', 'error')
             return redirect(url_for('home'))
         
@@ -118,6 +158,9 @@ def run_crawl():
             output_file = save_result(result, output_path, output_format, filename)
             output_files = [output_file]
             
+            # Save result to database
+            save_result_to_db(job.id, result, output_file)
+            
         elif crawl_type == 'multiple':
             # Multiple URLs crawl
             results = crawler.crawl_urls(urls)
@@ -131,6 +174,9 @@ def run_crawl():
                 
                 output_file = save_result(result, output_path, output_format, filename)
                 output_files.append(output_file)
+                
+                # Save result to database
+                save_result_to_db(job.id, result, output_file)
                 
         elif crawl_type == 'deep':
             # Deep crawl
@@ -146,6 +192,9 @@ def run_crawl():
                 output_file = save_result(result, output_path, output_format, filename)
                 output_files.append(output_file)
                 
+                # Save result to database
+                save_result_to_db(job.id, result, output_file)
+                
         elif crawl_type == 'files':
             # File download
             file_ext_list = [ext.strip() for ext in file_types.split(',')]
@@ -157,14 +206,26 @@ def run_crawl():
             )
             
             if not files:
+                job.status = 'completed'
+                job.completed_at = datetime.utcnow()
+                job.files_downloaded = 0
+                db.session.commit()
+                
                 flash('No matching files found', 'warning')
-                return redirect(url_for('home'))
+                return redirect(url_for('job_detail', job_id=job.id))
             
             # Download files
             for file_url in files:
                 file_path = crawler.download_file(file_url, str(output_path))
                 if file_path:
                     output_files.append(file_path)
+        
+        # Update job status
+        job.status = 'completed'
+        job.completed_at = datetime.utcnow()
+        job.pages_crawled = len(results)
+        job.files_downloaded = len(output_files) if crawl_type == 'files' else 0
+        db.session.commit()
         
         # Flash success message
         if crawl_type == 'files':
@@ -178,13 +239,40 @@ def run_crawl():
             crawl_type=crawl_type,
             results=results,
             output_files=output_files,
-            output_dir=str(output_path)
+            output_dir=str(output_path),
+            job_id=job.id
         )
         
     except Exception as e:
         logger.error(f"Crawling error: {str(e)}")
+        
+        # Update job status
+        job.status = 'failed'
+        job.error_message = str(e)
+        job.completed_at = datetime.utcnow()
+        db.session.commit()
+        
         flash(f'Error during crawling: {str(e)}', 'error')
-        return redirect(url_for('home'))
+        return redirect(url_for('job_detail', job_id=job.id))
+
+def save_result_to_db(job_id, result, output_file):
+    """Save a crawl result to the database"""
+    try:
+        db_result = CrawlResult(
+            job_id=job_id,
+            url=result.get('url', ''),
+            title=result.get('title', ''),
+            output_file=output_file,
+            content_length=len(result.get('text', '')),
+            word_count=len(result.get('text', '').split()),
+            link_count=len(result.get('links', [])),
+            image_count=len(result.get('images', [])),
+            created_at=datetime.utcnow()
+        )
+        db.session.add(db_result)
+        db.session.commit()
+    except Exception as e:
+        logger.error(f"Error saving result to database: {str(e)}")
 
 def save_result(result, output_dir, format_type, filename):
     """Save the crawl result to the specified directory with the given format."""
@@ -251,6 +339,54 @@ def view_file(filename):
     else:
         # Plain text view
         return render_template('view_text.html', filename=filename, content=content)
+
+@app.route('/settings', methods=['GET', 'POST'])
+def settings():
+    """View and edit application settings"""
+    if request.method == 'POST':
+        # Update settings
+        for key, value in request.form.items():
+            if key.startswith('setting_'):
+                setting_key = key[8:]  # Remove 'setting_' prefix
+                setting = Setting.query.filter_by(key=setting_key).first()
+                if setting:
+                    setting.value = value
+                else:
+                    setting = Setting(key=setting_key, value=value)
+                    db.session.add(setting)
+        
+        db.session.commit()
+        flash('Settings updated successfully', 'success')
+        return redirect(url_for('settings'))
+    
+    # Get all settings
+    all_settings = Setting.query.all()
+    return render_template('settings.html', settings=all_settings)
+
+# Initialize default settings if they don't exist
+def init_default_settings():
+    """Initialize default settings"""
+    default_settings = {
+        'default_output_dir': './results',
+        'default_format': 'markdown',
+        'max_concurrent_jobs': '5',
+        'enable_browser_crawling': 'true',
+        'default_max_depth': '3',
+        'default_max_pages': '20',
+        'default_file_types': 'pdf,doc,docx,xls,xlsx,ppt,pptx'
+    }
+    
+    for key, value in default_settings.items():
+        setting = Setting.query.filter_by(key=key).first()
+        if not setting:
+            setting = Setting(key=key, value=value)
+            db.session.add(setting)
+    
+    db.session.commit()
+
+# Initialize settings when the app starts
+with app.app_context():
+    init_default_settings()
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

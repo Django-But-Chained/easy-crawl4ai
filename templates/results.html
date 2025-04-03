@@ -39,6 +39,10 @@
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="/">Home</a></li>
+                    <li class="breadcrumb-item"><a href="{{ url_for('job_list') }}">Jobs</a></li>
+                    {% if job_id %}
+                    <li class="breadcrumb-item"><a href="{{ url_for('job_detail', job_id=job_id) }}">Job #{{ job_id }}</a></li>
+                    {% endif %}
                     <li class="breadcrumb-item active" aria-current="page">Results</li>
                 </ol>
             </nav>

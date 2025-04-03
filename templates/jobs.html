@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job History - Easy Crawl4AI</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 2rem;
+            padding-bottom: 4rem;
+        }
+        .status-badge {
+            font-size: 0.85rem;
+        }
+        .status-pending {
+            background-color: var(--bs-warning);
+        }
+        .status-running {
+            background-color: var(--bs-info);
+        }
+        .status-completed {
+            background-color: var(--bs-success);
+        }
+        .status-failed {
+            background-color: var(--bs-danger);
+        }
+        .job-row {
+            cursor: pointer;
+        }
+        .job-row:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="mb-4">
+            <h1>Job History</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Jobs</li>
+                </ol>
+            </nav>
+        </header>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Job List -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Crawl Jobs</h5>
+                <a href="/" class="btn btn-primary btn-sm">Start New Job</a>
+            </div>
+            <div class="card-body">
+                {% if jobs %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Type</th>
+                                <th>Target</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Results</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for job in jobs %}
+                            <tr class="job-row" data-href="{{ url_for('job_detail', job_id=job.id) }}">
+                                <td>{{ job.id }}</td>
+                                <td>
+                                    {% if job.crawl_type == 'single' %}
+                                        Single URL
+                                    {% elif job.crawl_type == 'multiple' %}
+                                        Multiple URLs
+                                    {% elif job.crawl_type == 'deep' %}
+                                        Deep Crawl
+                                    {% elif job.crawl_type == 'files' %}
+                                        File Download
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if job.crawl_type == 'single' or job.crawl_type == 'deep' or job.crawl_type == 'files' %}
+                                        <a href="{{ job.url }}" target="_blank" class="text-truncate d-inline-block" style="max-width: 200px;">{{ job.url }}</a>
+                                    {% elif job.crawl_type == 'multiple' and job.urls %}
+                                        {{ job.urls|length }} URLs
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td><span class="badge status-badge status-{{ job.status }}">{{ job.status|upper }}</span></td>
+                                <td>{{ job.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>
+                                    {% if job.results_count is defined %}
+                                        {{ job.results_count }}
+                                    {% else %}
+                                        0
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('job_detail', job_id=job.id) }}" class="btn btn-sm btn-outline-info">Details</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <p class="mb-0">No crawl jobs have been run yet. <a href="/">Start a new crawl</a> to see results here.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container text-center">
+            <p>
+                Easy Crawl4AI - A user-friendly wrapper for <a href="https://github.com/unclecode/crawl4ai" target="_blank" class="text-info">crawl4ai</a>
+            </p>
+            <p class="small text-muted">
+                This tool helps extract content from websites in a simple, non-technical way.
+            </p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Make entire row clickable for job detail
+        document.addEventListener('DOMContentLoaded', function() {
+            const rows = document.querySelectorAll('.job-row');
+            rows.forEach(row => {
+                row.addEventListener('click', function() {
+                    window.location.href = this.dataset.href;
+                });
+            });
+        });
+    </script>
+</body>
+</html>
