@@ -1,129 +1,86 @@
 # Easy Crawl4AI
 
-A user-friendly wrapper for the [crawl4ai](https://github.com/unclecode/crawl4ai) web crawler that simplifies usage for non-technical users.
+A user-friendly wrapper for the crawl4ai web crawler, designed to make web scraping accessible to users without technical expertise.
 
 ## Features
 
-- Simple, intuitive web interface and command-line interface
-- Clear explanations of each option
-- Customizable output location for crawled data
-- Progress indicators and detailed summaries
-- Built on top of the powerful crawl4ai library
+### Command-Line Interface
+- **Single URL crawling**: Extract content from a specific webpage
+- **Multiple URL crawling**: Process a list of URLs in parallel 
+- **Deep crawling**: Follow links from a starting URL to discover and crawl additional pages
+- **File downloading**: Find and download specific file types (PDF, DOC, etc.) from websites
+
+### Web Interface
+- **Job-based crawling**: Submit crawling tasks through a browser and view results
+- **Batch processing**: Process multiple URLs in a single batch job with configurable settings
+- **Job history**: Track the status and results of all crawling jobs
+- **Settings management**: Configure default settings and install optional features
+
+### Output Formats
+- Multiple output formats supported: Markdown, HTML, plain text, and JSON
+- Ability to view or download results directly from the web interface
 
 ## Installation
 
-First, make sure you have Python 3.8 or higher installed. Then install Easy Crawl4AI with all its dependencies:
+1. Clone this repository:
+   ```
+   git clone https://github.com/yourusername/easy-crawl4ai.git
+   cd easy-crawl4ai
+   ```
 
-```bash
-# Install required dependencies
-pip install crawl4ai rich click flask
+2. Install dependencies:
+   ```
+   pip install -e .
+   ```
 
-# If installing from this repo
-pip install .
-```
+3. Run the web interface:
+   ```
+   python easy_crawl4ai_web.py
+   ```
+
+4. Or use the command-line interface:
+   ```
+   python easy_crawl4ai.py --help
+   ```
+
+## Requirements
+
+- Python 3.8+
+- crawl4ai
+- Flask
+- SQLAlchemy
+- Playwright (optional, for browser-based crawling)
+- PyPDF2 (optional, for PDF processing)
 
 ## Usage
 
-### Web Interface (Recommended for Non-Technical Users)
-
-The web interface provides a user-friendly way to configure and run the crawler:
+### Command Line
 
 ```bash
-# Start the web interface
-python easy_crawl4ai_web.py
-
-# Or if installed via pip
-easy_crawl4ai_web
-```
-
-Then open your browser and navigate to: http://localhost:5000
-
-### Command Line Interface
-
-For more advanced users or for scripting purposes, you can use the command-line interface:
-
-```bash
-# Get help information
-python easy_crawl4ai.py info
-
-# Basic usage: Crawl a single URL
+# Crawl a single URL
 python easy_crawl4ai.py crawl https://example.com -o ./results -f markdown
 
-# Deep crawling: Follow links within a website
-python easy_crawl4ai.py deep-crawl https://example.com -d 3 -p 20 -o ./deep_results
-
-# Multiple URLs: Crawl several pages in parallel
+# Crawl multiple URLs
 python easy_crawl4ai.py crawl-multiple https://example.com https://another.com -o ./results
 
-# Download files: Get PDFs, documents, etc.
+# Deep crawl a website
+python easy_crawl4ai.py deep-crawl https://example.com -d 3 -p 20 -o ./deep_results
+
+# Download files from a website
 python easy_crawl4ai.py download-files https://example.com -o ./downloads -t pdf,docx
 ```
 
-## Command Options
+### Web Interface
 
-### Common Options (Available for All Commands)
+1. Start the web server:
+   ```bash
+   python easy_crawl4ai_web.py
+   ```
 
-- `--output-dir`, `-o`: Directory where results will be saved
-- `--format`, `-f`: Output format (markdown, html, text, json)
-- `--browser/--no-browser`: Use browser-based crawling for JavaScript-heavy sites
-- `--include-images/--no-images`: Include image descriptions in the output
-- `--include-links/--no-links`: Include hyperlinks in the output
+2. Open your browser and navigate to `http://localhost:5000`
 
-### Command-Specific Options
-
-#### Deep Crawl
-
-- `--max-depth`, `-d`: Maximum depth for crawling (default: 2)
-- `--max-pages`, `-p`: Maximum number of pages to crawl (default: 10)
-- `--stay-within-domain/--explore-external`: Restrict crawling to the same domain
-
-#### Multiple URLs
-
-- `--concurrent`, `-c`: Number of URLs to crawl concurrently (default: 5)
-
-#### Download Files
-
-- `--file-types`, `-t`: Comma-separated list of file extensions to download
-- `--max-size`, `-s`: Maximum file size in MB (default: 100)
-- `--max-files`, `-m`: Maximum number of files to download (default: 10)
-
-## Output Formats
-
-- **Markdown**: Human-readable text with formatting (default)
-- **HTML**: Original HTML content
-- **Text**: Plain text without formatting
-- **JSON**: Structured data format for processing
-
-## Example Usage Scenarios
-
-### Scenario 1: Research a Topic
-
-```bash
-# Crawl a Wikipedia article and its linked pages
-python easy_crawl4ai.py deep-crawl https://en.wikipedia.org/wiki/Artificial_intelligence -d 2 -p 5 -o ./ai_research --stay-within-domain
-```
-
-### Scenario 2: Download Course Materials
-
-```bash
-# Download all PDFs from a course website
-python easy_crawl4ai.py download-files https://university.edu/course101 -o ./course_materials -t pdf,ppt,docx
-```
-
-### Scenario 3: Monitor Multiple News Sites
-
-```bash
-# Crawl the front pages of several news websites
-python easy_crawl4ai.py crawl-multiple https://news.bbc.co.uk https://cnn.com https://reuters.com -o ./news_updates
-```
+3. Use the web interface to submit and manage crawling jobs
 
 ## License
 
-This project is licensed under the Apache 2.0 License - see the LICENSE file for details.
-
-## Acknowledgments
-
-- [crawl4ai](https://github.com/unclecode/crawl4ai) - The powerful web crawler library this tool is based on
-- [Click](https://click.palletsprojects.com/) - For the command-line interface
-- [Rich](https://rich.readthedocs.io/en/latest/) - For beautiful console output
-- [Flask](https://flask.palletsprojects.com/) - For the web interface
+MIT License
