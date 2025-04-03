@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Easy Crawl4AI - Web Interface</title>
+    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <style>
+        .option-description {
+            font-size: 0.9rem;
+            color: #adb5bd;
+            margin-bottom: 1rem;
+        }
+        .command-section {
+            display: none;
+        }
+        .command-section.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container py-4">
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="text-center mb-3">Easy Crawl4AI</h1>
+                <p class="lead text-center">A user-friendly interface for the powerful crawl4ai web crawler</p>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <div class="card bg-dark">
+                    <div class="card-header">
+                        <h5 class="mb-0">Web Crawler Configuration</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="crawlerForm">
+                            <div class="mb-3">
+                                <label for="commandType" class="form-label">Command Type:</label>
+                                <select id="commandType" name="command_type" class="form-select">
+                                    <option value="crawl">Single URL Crawl</option>
+                                    <option value="deep-crawl">Deep Crawl</option>
+                                    <option value="crawl-multiple">Multiple URLs Crawl</option>
+                                    <option value="download-files">Download Files</option>
+                                </select>
+                                <div class="option-description">
+                                    <div id="crawl-description">
+                                        Crawl a single URL and save the content. Perfect for quick retrieval of information from a specific web page.
+                                    </div>
+                                    <div id="deep-crawl-description" style="display: none;">
+                                        Crawl not only the provided URL but also follow links to discover and crawl additional pages. Great for exploring websites more thoroughly.
+                                    </div>
+                                    <div id="crawl-multiple-description" style="display: none;">
+                                        Crawl multiple URLs in parallel and save each result separately. Useful for batch processing of web pages.
+                                    </div>
+                                    <div id="download-files-description" style="display: none;">
+                                        Find and download files (like PDFs, documents, etc.) from a website. Useful for collecting documents or resources.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Common Options -->
+                            <div class="mb-3">
+                                <label for="url" class="form-label">URL:</label>
+                                <input type="url" id="url" name="url" class="form-control" placeholder="https://example.com" required>
+                                <div class="form-text">The website URL to crawl</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="outputDir" class="form-label">Output Directory:</label>
+                                <input type="text" id="outputDir" name="output_dir" class="form-control" value="./crawl_results">
+                                <div class="form-text">Local directory where crawl results will be saved</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="format" class="form-label">Output Format:</label>
+                                <select id="format" name="format" class="form-select">
+                                    <option value="markdown">Markdown</option>
+                                    <option value="html">HTML</option>
+                                    <option value="text">Plain Text</option>
+                                    <option value="json">JSON</option>
+                                </select>
+                                <div class="form-text">Format for saving the crawled content</div>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input type="checkbox" id="browser" name="browser" class="form-check-input">
+                                <label for="browser" class="form-check-label">Use Browser-based Crawling</label>
+                                <div class="form-text">Enable for JavaScript-heavy websites that require a browser to render content</div>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input type="checkbox" id="includeImages" name="include_images" class="form-check-input" checked>
+                                <label for="includeImages" class="form-check-label">Include Images</label>
+                                <div class="form-text">Include image descriptions in the output</div>
+                            </div>
+
+                            <div class="form-check mb-3">
+                                <input type="checkbox" id="includeLinks" name="include_links" class="form-check-input" checked>
+                                <label for="includeLinks" class="form-check-label">Include Links</label>
+                                <div class="form-text">Include hyperlinks in the output</div>
+                            </div>
+
+                            <!-- Deep Crawl Options (initially hidden) -->
+                            <div id="deepCrawlOptions" class="command-section">
+                                <hr>
+                                <h5>Deep Crawl Options</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="maxDepth" class="form-label">Maximum Depth:</label>
+                                    <input type="number" id="maxDepth" name="max_depth" class="form-control" value="2" min="1" max="10">
+                                    <div class="form-text">How many links deep to crawl (1 = only the provided URL)</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="maxPages" class="form-label">Maximum Pages:</label>
+                                    <input type="number" id="maxPages" name="max_pages" class="form-control" value="10" min="1" max="100">
+                                    <div class="form-text">Maximum number of pages to crawl</div>
+                                </div>
+
+                                <div class="form-check mb-3">
+                                    <input type="checkbox" id="stayWithinDomain" name="stay_within_domain" class="form-check-input" checked>
+                                    <label for="stayWithinDomain" class="form-check-label">Stay Within Domain</label>
+                                    <div class="form-text">Only follow links within the same domain</div>
+                                </div>
+                            </div>
+
+                            <!-- Multiple URLs Options (initially hidden) -->
+                            <div id="multipleUrlsOptions" class="command-section">
+                                <hr>
+                                <h5>Multiple URLs Options</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="additionalUrls" class="form-label">Additional URLs:</label>
+                                    <textarea id="additionalUrls" name="additional_urls" class="form-control" rows="4" placeholder="Enter one URL per line"></textarea>
+                                    <div class="form-text">Enter additional URLs to crawl (one per line)</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="concurrent" class="form-label">Concurrent Crawls:</label>
+                                    <input type="number" id="concurrent" name="concurrent" class="form-control" value="5" min="1" max="20">
+                                    <div class="form-text">Number of URLs to crawl simultaneously</div>
+                                </div>
+                            </div>
+
+                            <!-- Download Files Options (initially hidden) -->
+                            <div id="downloadFilesOptions" class="command-section">
+                                <hr>
+                                <h5>Download Files Options</h5>
+                                
+                                <div class="mb-3">
+                                    <label for="fileTypes" class="form-label">File Types:</label>
+                                    <input type="text" id="fileTypes" name="file_types" class="form-control" value="pdf,docx,xlsx" placeholder="pdf,docx,xlsx">
+                                    <div class="form-text">File extensions to download (comma-separated)</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="maxFiles" class="form-label">Maximum Files:</label>
+                                    <input type="number" id="maxFiles" name="max_files" class="form-control" value="10" min="1" max="100">
+                                    <div class="form-text">Maximum number of files to download</div>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label for="maxSize" class="form-label">Maximum Size (MB):</label>
+                                    <input type="number" id="maxSize" name="max_size" class="form-control" value="10" min="1" max="100">
+                                    <div class="form-text">Maximum file size in megabytes</div>
+                                </div>
+                            </div>
+
+                            <div class="d-grid gap-2">
+                                <button type="submit" class="btn btn-primary">Start Crawling</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section (Initially Hidden) -->
+        <div class="row mt-4" id="resultsSection" style="display: none;">
+            <div class="col-lg-8 mx-auto">
+                <div class="card bg-dark">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Crawl Results</h5>
+                        <button id="closeResults" class="btn btn-sm btn-outline-secondary">Close</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="resultsContent"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Handle command type selection
+            const commandType = document.getElementById('commandType');
+            const descriptions = {
+                'crawl': document.getElementById('crawl-description'),
+                'deep-crawl': document.getElementById('deep-crawl-description'),
+                'crawl-multiple': document.getElementById('crawl-multiple-description'),
+                'download-files': document.getElementById('download-files-description')
+            };
+            
+            const optionSections = {
+                'deep-crawl': document.getElementById('deepCrawlOptions'),
+                'crawl-multiple': document.getElementById('multipleUrlsOptions'),
+                'download-files': document.getElementById('downloadFilesOptions')
+            };
+            
+            commandType.addEventListener('change', function() {
+                // Update descriptions
+                Object.values(descriptions).forEach(desc => desc.style.display = 'none');
+                descriptions[this.value].style.display = 'block';
+                
+                // Update option sections
+                Object.values(optionSections).forEach(section => section.classList.remove('active'));
+                if (optionSections[this.value]) {
+                    optionSections[this.value].classList.add('active');
+                }
+            });
+            
+            // Form submission
+            const form = document.getElementById('crawlerForm');
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // Show a loading message
+                const resultsSection = document.getElementById('resultsSection');
+                const resultsContent = document.getElementById('resultsContent');
+                resultsContent.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Crawling in progress...</p></div>';
+                resultsSection.style.display = 'block';
+                
+                // Collect form data
+                const formData = new FormData(form);
+                
+                // For multiple URLs, add from textarea
+                if (commandType.value === 'crawl-multiple') {
+                    const additionalUrls = document.getElementById('additionalUrls').value;
+                    const urls = additionalUrls.split('\n').filter(url => url.trim());
+                    urls.forEach(url => formData.append('urls', url.trim()));
+                }
+                
+                // Send to server
+                fetch('/run_crawl', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        resultsContent.innerHTML = `
+                            <div class="alert alert-success">
+                                <h4 class="alert-heading">Crawl Successful!</h4>
+                                <p>The crawl has been completed successfully. The results have been saved to the specified output directory.</p>
+                                <hr>
+                                <p class="mb-0">You can find your files in: <code>${formData.get('output_dir')}</code></p>
+                            </div>
+                            <div class="mt-3">
+                                <h5>Output:</h5>
+                                <pre class="bg-dark text-light p-3 rounded">${data.output}</pre>
+                            </div>
+                        `;
+                    } else {
+                        resultsContent.innerHTML = `
+                            <div class="alert alert-danger">
+                                <h4 class="alert-heading">Crawl Failed</h4>
+                                <p>There was an error during the crawling process:</p>
+                                <hr>
+                                <p class="mb-0">${data.error || data.message}</p>
+                            </div>
+                        `;
+                    }
+                })
+                .catch(error => {
+                    resultsContent.innerHTML = `
+                        <div class="alert alert-danger">
+                            <h4 class="alert-heading">Error</h4>
+                            <p>There was an error communicating with the server:</p>
+                            <hr>
+                            <p class="mb-0">${error.message}</p>
+                        </div>
+                    `;
+                });
+            });
+            
+            // Close results
+            document.getElementById('closeResults').addEventListener('click', function() {
+                document.getElementById('resultsSection').style.display = 'none';
+            });
+        });
+    </script>
+</body>
+</html>
