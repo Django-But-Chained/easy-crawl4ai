@@ -1,0 +1,206 @@
+{% extends 'base.html' %}
+
+{% block title %}Batch Processing{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Batch Processing</h1>
+        <a href="{{ url_for('new_batch') }}" class="btn btn-primary">
+            <i class="bi bi-plus-circle"></i> New Batch Job
+        </a>
+    </div>
+    
+    <!-- Introduction Card -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">What is Batch Processing?</h5>
+            <p class="card-text">
+                Batch processing allows you to crawl multiple URLs in a single job. It's perfect for:
+            </p>
+            <ul>
+                <li>Processing lists of URLs efficiently</li>
+                <li>Scheduling crawls to run in the background</li>
+                <li>Managing and monitoring progress of multiple crawls</li>
+                <li>Handling errors and retrying failed URLs</li>
+            </ul>
+            <p class="card-text">
+                To get started, click the "New Batch Job" button above.
+            </p>
+        </div>
+    </div>
+    
+    <!-- Active Batch Jobs -->
+    {% if active_batches %}
+    <h2 class="mb-3">Active Batch Jobs</h2>
+    <div class="row row-cols-1 row-cols-md-2 mb-4">
+        {% for batch in active_batches %}
+        <div class="col mb-4">
+            <div class="card h-100">
+                <div class="card-header {% if batch.status == 'running' %}bg-primary text-white{% elif batch.status == 'paused' %}bg-warning{% else %}bg-secondary text-white{% endif %}">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ batch.name }}</h5>
+                        <span class="badge {% if batch.status == 'running' %}bg-info{% elif batch.status == 'paused' %}bg-warning text-dark{% else %}bg-secondary{% endif %}">
+                            {{ batch.status|capitalize }}
+                        </span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">
+                        {% if batch.description %}
+                        {{ batch.description }}
+                        {% else %}
+                        <span class="text-muted">No description provided</span>
+                        {% endif %}
+                    </p>
+                    
+                    <div class="progress mb-3" style="height: 20px;">
+                        {% if batch.status == 'running' %}
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" 
+                             style="width: {{ batch.progress_percentage() }}%;" aria-valuenow="{{ batch.progress_percentage() }}" 
+                             aria-valuemin="0" aria-valuemax="100">
+                            {{ batch.progress_percentage() }}%
+                        </div>
+                        {% else %}
+                        <div class="progress-bar" role="progressbar" 
+                             style="width: {{ batch.progress_percentage() }}%;" aria-valuenow="{{ batch.progress_percentage() }}" 
+                             aria-valuemin="0" aria-valuemax="100">
+                            {{ batch.progress_percentage() }}%
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between text-muted small mb-3">
+                        <div>Total: {{ batch.total_urls }}</div>
+                        <div>Processed: {{ batch.processed_urls }}</div>
+                        <div>Remaining: {{ batch.remaining_urls() }}</div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <div class="text-success small">
+                            Success: {{ batch.successful_urls }}
+                        </div>
+                        <div class="text-danger small">
+                            Failed: {{ batch.failed_urls }}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">Created: {{ batch.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        <a href="{{ url_for('batch_detail', batch_id=batch.id) }}" class="btn btn-sm btn-primary">View Details</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <!-- Completed Batch Jobs -->
+    {% if completed_batches %}
+    <h2 class="mb-3">Completed Batch Jobs</h2>
+    <div class="table-responsive">
+        <table class="table table-hover table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>Name</th>
+                    <th>Status</th>
+                    <th>URLs</th>
+                    <th>Success/Failed</th>
+                    <th>Completed</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for batch in completed_batches %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('batch_detail', batch_id=batch.id) }}">{{ batch.name }}</a>
+                        {% if batch.description %}
+                        <br><small class="text-muted">{{ batch.description|truncate(50) }}</small>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if batch.status == 'completed' %}
+                        <span class="badge bg-success">Completed</span>
+                        {% elif batch.status == 'failed' %}
+                        <span class="badge bg-danger">Failed</span>
+                        {% else %}
+                        <span class="badge bg-secondary">{{ batch.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ batch.total_urls }}</td>
+                    <td>
+                        <span class="text-success">{{ batch.successful_urls }}</span> / 
+                        <span class="text-danger">{{ batch.failed_urls }}</span>
+                    </td>
+                    <td>{{ batch.completed_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <a href="{{ url_for('batch_detail', batch_id=batch.id) }}" class="btn btn-primary" title="View Details">
+                                <i class="bi bi-eye"></i>
+                            </a>
+                            <a href="{{ url_for('export_batch_results', batch_id=batch.id) }}" class="btn btn-success" title="Export Results">
+                                <i class="bi bi-download"></i>
+                            </a>
+                            <a href="{{ url_for('delete_batch', batch_id=batch.id) }}" class="btn btn-danger" title="Delete"
+                               onclick="return confirm('Are you sure you want to delete this batch job? This cannot be undone.');">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+    
+    <!-- No Batch Jobs -->
+    {% if not active_batches and not completed_batches %}
+    <div class="text-center p-5 bg-light rounded mb-4">
+        <h3 class="mb-3">No Batch Jobs Yet</h3>
+        <p class="lead mb-4">Get started by creating your first batch job to process multiple URLs at once.</p>
+        <a href="{{ url_for('new_batch') }}" class="btn btn-lg btn-primary">
+            <i class="bi bi-plus-circle me-2"></i> Create Your First Batch Job
+        </a>
+    </div>
+    {% endif %}
+    
+    <!-- Tips Section -->
+    <div class="card mt-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="bi bi-lightbulb me-2"></i>Tips for Batch Processing</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <h6>Creating Effective Batches:</h6>
+                    <ul>
+                        <li>Group similar URLs together for consistent results</li>
+                        <li>Keep batches under 100 URLs for best performance</li>
+                        <li>Use descriptive names for easy reference</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6>Optimizing Success Rates:</h6>
+                    <ul>
+                        <li>Enable browser-based crawling for dynamic sites</li>
+                        <li>Increase timeout for complex or slow websites</li>
+                        <li>Retry failed URLs after adjusting settings</li>
+                    </ul>
+                </div>
+                <div class="col-md-4">
+                    <h6>Managing Results:</h6>
+                    <ul>
+                        <li>Export results for offline use</li>
+                        <li>Results remain available until manually deleted</li>
+                        <li>Check error details for troubleshooting failed URLs</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

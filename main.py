@@ -657,6 +657,495 @@ def internal_error(error):
     
     return render_template('error.html', error=error_info, back_url=url_for('home')), 500
 
+# Batch Processing Routes
+@app.route('/batches')
+def batch_jobs():
+    """List all batch jobs"""
+    # Get active (pending, running, paused) and completed (completed, failed) batch jobs
+    from models import BatchJob
+    
+    active_batches = BatchJob.query.filter(
+        BatchJob.status.in_(['pending', 'running', 'paused'])
+    ).order_by(BatchJob.created_at.desc()).all()
+    
+    completed_batches = BatchJob.query.filter(
+        BatchJob.status.in_(['completed', 'failed'])
+    ).order_by(BatchJob.completed_at.desc()).all()
+    
+    return render_template('batches.html', 
+                          active_batches=active_batches,
+                          completed_batches=completed_batches)
+
+@app.route('/new-batch')
+def new_batch():
+    """Form for creating a new batch job"""
+    return render_template('new_batch.html', now=datetime.utcnow())
+
+@app.route('/create-batch', methods=['POST'])
+def create_batch():
+    """Create a new batch job"""
+    from models import BatchJob, BatchJobItem
+    
+    # Get form data
+    name = request.form.get('name', '')
+    description = request.form.get('description', '')
+    urls_text = request.form.get('urls', '')
+    output_dir = request.form.get('output_dir', f'./results/batch_{datetime.now().strftime("%Y%m%d_%H%M%S")}')
+    output_format = request.form.get('format', 'markdown')
+    use_browser = request.form.get('use_browser') == 'on'
+    include_images = request.form.get('include_images') == 'on'
+    include_links = request.form.get('include_links') == 'on'
+    concurrent_workers = int(request.form.get('concurrent_workers', 3))
+    timeout_per_url = int(request.form.get('timeout_per_url', 60))
+    schedule_type = request.form.get('schedule_type', 'now')
+    validate_urls = request.form.get('validate_urls') == 'on'
+    
+    # Validate input
+    if not name:
+        flash('Please enter a name for the batch job', 'error')
+        return redirect(url_for('new_batch'))
+    
+    # Process URLs (split by newline and remove empty lines)
+    url_list = [url.strip() for url in urls_text.split('\n') if url.strip()]
+    
+    if not url_list:
+        flash('Please enter at least one URL', 'error')
+        return redirect(url_for('new_batch'))
+    
+    # Validate URLs if requested
+    valid_urls = []
+    invalid_urls = []
+    
+    if validate_urls:
+        for url in url_list:
+            # Basic URL validation
+            try:
+                parsed = urlparse(url)
+                if not parsed.scheme or not parsed.netloc:
+                    invalid_urls.append(url)
+                else:
+                    valid_urls.append(url)
+            except Exception:
+                invalid_urls.append(url)
+    else:
+        valid_urls = url_list
+    
+    if invalid_urls:
+        flash(f'Found {len(invalid_urls)} invalid URLs. Please check your input.', 'warning')
+        if not valid_urls:
+            return redirect(url_for('new_batch'))
+    
+    # Create output directory
+    output_path = Path(output_dir)
+    ensure_directory(output_path)
+    
+    # Create a new batch job
+    batch = BatchJob(
+        name=name,
+        description=description,
+        output_dir=str(output_path),
+        format=output_format,
+        use_browser=use_browser,
+        include_images=include_images,
+        include_links=include_links,
+        concurrent_workers=concurrent_workers,
+        timeout_per_url=timeout_per_url,
+        status='pending' if schedule_type == 'now' else 'paused',
+        total_urls=len(valid_urls),
+        created_at=datetime.utcnow()
+    )
+    
+    db.session.add(batch)
+    db.session.commit()
+    
+    # Add each URL as a batch item
+    for url in valid_urls:
+        item = BatchJobItem(
+            batch_job_id=batch.id,
+            url=url,
+            status='pending',
+            created_at=datetime.utcnow()
+        )
+        db.session.add(item)
+    
+    db.session.commit()
+    
+    # Flash success message
+    flash(f'Batch job "{name}" created with {len(valid_urls)} URLs', 'success')
+    
+    # Start the batch job if scheduled to run immediately
+    if schedule_type == 'now':
+        return redirect(url_for('start_batch', batch_id=batch.id))
+    else:
+        return redirect(url_for('batch_detail', batch_id=batch.id))
+
+@app.route('/batch/<int:batch_id>')
+def batch_detail(batch_id):
+    """View details of a specific batch job"""
+    from models import BatchJob, BatchJobItem
+    
+    # Get the batch job
+    batch = BatchJob.query.get_or_404(batch_id)
+    
+    # Get all items
+    batch_items = BatchJobItem.query.filter_by(batch_job_id=batch_id).all()
+    
+    # Filter items by status for tabs
+    pending_items = [item for item in batch_items if item.status == 'pending']
+    processing_items = [item for item in batch_items if item.status == 'processing']
+    completed_items = [item for item in batch_items if item.status == 'completed']
+    failed_items = [item for item in batch_items if item.status == 'failed']
+    
+    return render_template(
+        'batch_detail.html',
+        batch=batch,
+        batch_items=batch_items,
+        pending_items=pending_items,
+        processing_items=processing_items,
+        completed_items=completed_items,
+        failed_items=failed_items
+    )
+
+@app.route('/start-batch/<int:batch_id>')
+def start_batch(batch_id):
+    """Start processing a batch job"""
+    from models import BatchJob
+    
+    # Get the batch job
+    batch = BatchJob.query.get_or_404(batch_id)
+    
+    # Check if it can be started
+    if batch.status not in ['pending', 'paused']:
+        flash(f'Cannot start batch job in {batch.status} status', 'error')
+        return redirect(url_for('batch_detail', batch_id=batch_id))
+    
+    # Update the status
+    batch.status = 'running'
+    batch.started_at = datetime.utcnow() if not batch.started_at else batch.started_at
+    db.session.commit()
+    
+    # Start batch processing in background process
+    flash('Batch job started. Processing URLs in background.', 'success')
+    
+    # Start processing in a background thread
+    import threading
+    thread = threading.Thread(target=process_batch_job, args=(batch_id,))
+    thread.daemon = True
+    thread.start()
+    
+    return redirect(url_for('batch_detail', batch_id=batch_id))
+
+@app.route('/pause-batch/<int:batch_id>')
+def pause_batch(batch_id):
+    """Pause a running batch job"""
+    from models import BatchJob
+    
+    # Get the batch job
+    batch = BatchJob.query.get_or_404(batch_id)
+    
+    # Check if it can be paused
+    if batch.status != 'running':
+        flash(f'Cannot pause batch job in {batch.status} status', 'error')
+        return redirect(url_for('batch_detail', batch_id=batch_id))
+    
+    # Update the status
+    batch.status = 'paused'
+    db.session.commit()
+    
+    flash('Batch job paused. Currently processing URLs will complete before pausing.', 'info')
+    return redirect(url_for('batch_detail', batch_id=batch_id))
+
+@app.route('/delete-batch/<int:batch_id>')
+def delete_batch(batch_id):
+    """Delete a batch job and its items"""
+    from models import BatchJob, BatchJobItem
+    
+    # Get the batch job
+    batch = BatchJob.query.get_or_404(batch_id)
+    
+    # Check if it's currently running
+    if batch.status == 'running':
+        flash('Cannot delete a running batch job. Please pause it first.', 'error')
+        return redirect(url_for('batch_detail', batch_id=batch_id))
+    
+    # Delete the batch job (cascade will delete items)
+    db.session.delete(batch)
+    db.session.commit()
+    
+    flash(f'Batch job "{batch.name}" deleted', 'success')
+    return redirect(url_for('batch_jobs'))
+
+@app.route('/retry-item/<int:item_id>')
+def retry_item(item_id):
+    """Retry a failed batch job item"""
+    from models import BatchJobItem
+    
+    # Get the item
+    item = BatchJobItem.query.get_or_404(item_id)
+    
+    # Check if it's failed
+    if item.status != 'failed':
+        flash('Can only retry failed items', 'error')
+        return redirect(url_for('batch_detail', batch_id=item.batch_job_id))
+    
+    # Reset the item
+    item.status = 'pending'
+    item.error_message = None
+    item.started_at = None
+    item.completed_at = None
+    db.session.commit()
+    
+    # Update batch statistics
+    batch = item.batch_job
+    batch.failed_urls -= 1
+    batch.processed_urls -= 1
+    
+    # If the batch is completed or failed, set it back to pending
+    if batch.status in ['completed', 'failed']:
+        batch.status = 'pending'
+    
+    db.session.commit()
+    
+    flash(f'Item for URL {item.url} has been reset and will be retried', 'success')
+    return redirect(url_for('batch_detail', batch_id=item.batch_job_id))
+
+@app.route('/retry-failed-urls/<int:batch_id>')
+def retry_failed_urls(batch_id):
+    """Retry all failed URLs in a batch job"""
+    from models import BatchJob, BatchJobItem
+    
+    # Get the batch job
+    batch = BatchJob.query.get_or_404(batch_id)
+    
+    # Get all failed items
+    failed_items = BatchJobItem.query.filter_by(batch_job_id=batch_id, status='failed').all()
+    
+    if not failed_items:
+        flash('No failed items to retry', 'info')
+        return redirect(url_for('batch_detail', batch_id=batch_id))
+    
+    # Reset failed items
+    for item in failed_items:
+        item.status = 'pending'
+        item.error_message = None
+        item.started_at = None
+        item.completed_at = None
+    
+    # Update batch statistics and status
+    batch.failed_urls = 0
+    batch.processed_urls -= len(failed_items)
+    
+    # If the batch is completed or failed, set it back to pending
+    if batch.status in ['completed', 'failed']:
+        batch.status = 'pending'
+    
+    db.session.commit()
+    
+    flash(f'Reset {len(failed_items)} failed items for retry', 'success')
+    return redirect(url_for('batch_detail', batch_id=batch_id))
+
+@app.route('/export-batch-results/<int:batch_id>')
+def export_batch_results(batch_id):
+    """Export all results from a batch job"""
+    from models import BatchJob, BatchJobItem, CrawlResult
+    
+    # Get the batch job
+    batch = BatchJob.query.get_or_404(batch_id)
+    
+    # Check if it has completed items
+    completed_items = BatchJobItem.query.filter_by(batch_job_id=batch_id, status='completed').all()
+    
+    if not completed_items:
+        flash('No completed items to export', 'warning')
+        return redirect(url_for('batch_detail', batch_id=batch_id))
+    
+    # For now, redirect to the batch detail page
+    # In a real implementation, you would generate a zip file of all results
+    flash('Export functionality will be implemented in a future update', 'info')
+    return redirect(url_for('batch_detail', batch_id=batch_id))
+
+def process_batch_job(batch_id):
+    """
+    Process a batch job in the background.
+    
+    This function is called in a separate thread to process URLs in a batch job.
+    It selects pending items, crawls them, and updates the database with results.
+    """
+    from models import BatchJob, BatchJobItem, CrawlResult
+    
+    # Create a new app context for this thread
+    with app.app_context():
+        try:
+            # Get the batch job
+            batch = BatchJob.query.get(batch_id)
+            if not batch:
+                logger.error(f"Batch job {batch_id} not found")
+                return
+            
+            # Check if it's already running
+            if batch.status != 'running':
+                logger.info(f"Batch job {batch_id} is not in running state")
+                return
+            
+            logger.info(f"Starting batch job {batch_id} processing")
+            
+            # Import crawl4ai here to avoid startup errors if not installed
+            try:
+                import crawl4ai
+            except ImportError:
+                logger.error("crawl4ai library is not installed")
+                batch.status = 'failed'
+                batch.error_message = 'crawl4ai library is not installed'
+                db.session.commit()
+                return
+            
+            # Set up crawler with batch options
+            crawler = crawl4ai.Crawler(
+                use_browser=batch.use_browser,
+                include_images=batch.include_images,
+                include_links=batch.include_links,
+                timeout=batch.timeout_per_url
+            )
+            
+            # Process items in batches based on concurrent_workers
+            concurrent_limit = batch.concurrent_workers
+            
+            # Keep track of active workers and processed URLs
+            active_workers = 0
+            total_processed = 0
+            
+            # Continue until all items are processed or batch status is changed
+            while batch.status == 'running' and total_processed < batch.total_urls:
+                # Check if batch has been updated by another process
+                db.session.refresh(batch)
+                
+                # If batch status has changed, stop processing
+                if batch.status != 'running':
+                    logger.info(f"Batch job {batch_id} status changed to {batch.status}, stopping")
+                    break
+                
+                # Find pending items to process
+                pending_items = BatchJobItem.query.filter_by(
+                    batch_job_id=batch_id, 
+                    status='pending'
+                ).limit(concurrent_limit - active_workers).all()
+                
+                if not pending_items:
+                    # No more pending items, check if there are any processing items
+                    processing_items = BatchJobItem.query.filter_by(
+                        batch_job_id=batch_id, 
+                        status='processing'
+                    ).count()
+                    
+                    if processing_items == 0:
+                        # No more items to process, mark batch as completed
+                        batch.status = 'completed'
+                        batch.completed_at = datetime.utcnow()
+                        db.session.commit()
+                        logger.info(f"Batch job {batch_id} completed")
+                        break
+                    
+                    # Wait for processing items to complete
+                    logger.info(f"Waiting for {processing_items} items to complete")
+                    import time
+                    time.sleep(5)
+                    continue
+                
+                # Process each pending item
+                for item in pending_items:
+                    # Update item status
+                    item.status = 'processing'
+                    item.started_at = datetime.utcnow()
+                    db.session.commit()
+                    
+                    try:
+                        logger.info(f"Processing item {item.id}: {item.url}")
+                        
+                        # Crawl URL
+                        result = crawler.crawl_url(item.url)
+                        
+                        # Generate filename from URL
+                        parsed_url = urlparse(item.url)
+                        domain = parsed_url.netloc.replace('.', '_')
+                        filename = f"{domain}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                        
+                        # Save result
+                        output_file = save_result(result, batch.output_dir, batch.format, filename)
+                        
+                        # Create result in database
+                        db_result = CrawlResult(
+                            job_id=batch_id,  # Use batch_id as job_id for now
+                            url=item.url,
+                            title=result.get('title', ''),
+                            output_file=output_file,
+                            content_length=len(result.get('text', '')),
+                            word_count=len(result.get('text', '').split()),
+                            link_count=len(result.get('links', [])),
+                            image_count=len(result.get('images', [])),
+                            created_at=datetime.utcnow()
+                        )
+                        db.session.add(db_result)
+                        db.session.commit()
+                        
+                        # Update item status
+                        item.status = 'completed'
+                        item.result_id = db_result.id
+                        item.completed_at = datetime.utcnow()
+                        
+                        # Update batch statistics
+                        batch.processed_urls += 1
+                        batch.successful_urls += 1
+                        
+                        logger.info(f"Successfully processed {item.url}")
+                        
+                    except Exception as e:
+                        logger.error(f"Error processing {item.url}: {str(e)}")
+                        
+                        # Format error message
+                        error_info = format_error_message(e, include_exception_details=True)
+                        
+                        # Update item status
+                        item.status = 'failed'
+                        item.error_message = json.dumps(error_info)
+                        item.completed_at = datetime.utcnow()
+                        
+                        # Update batch statistics
+                        batch.processed_urls += 1
+                        batch.failed_urls += 1
+                    
+                    # Commit changes
+                    db.session.commit()
+                    total_processed += 1
+                
+                # Check if we should continue
+                if batch.processed_urls >= batch.total_urls:
+                    # All items processed, mark batch as completed
+                    batch.status = 'completed'
+                    batch.completed_at = datetime.utcnow()
+                    db.session.commit()
+                    logger.info(f"Batch job {batch_id} completed, processed {batch.processed_urls} URLs")
+                    break
+            
+            # Final check for completion
+            db.session.refresh(batch)
+            if batch.processed_urls >= batch.total_urls and batch.status == 'running':
+                batch.status = 'completed'
+                batch.completed_at = datetime.utcnow()
+                db.session.commit()
+                logger.info(f"Batch job {batch_id} completed, processed {batch.processed_urls} URLs")
+                
+        except Exception as e:
+            logger.error(f"Error processing batch job {batch_id}: {str(e)}")
+            
+            # Try to update batch status if possible
+            try:
+                if batch:
+                    batch.status = 'failed'
+                    batch.error_message = str(e)
+                    db.session.commit()
+            except Exception as inner_e:
+                logger.error(f"Error updating batch status: {str(inner_e)}")
+
 # Initialize settings when the app starts
 with app.app_context():
     init_default_settings()
