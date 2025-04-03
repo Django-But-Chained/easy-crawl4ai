@@ -121,6 +121,106 @@
                         </div>
                     </div>
                     
+                    <div class="card settings-card">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Optional Features</h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-3">
+                                crawl4ai offers several optional features that can be installed separately. 
+                                These features require additional dependencies.
+                            </p>
+                            
+                            <div class="list-group mb-3">
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">PDF Processing</h6>
+                                            <p class="mb-1 text-muted small">Extract text from PDF files</p>
+                                            <p class="mb-0 small">
+                                                <code>pip install "crawl4ai[pdf]"</code> or 
+                                                <code>pip install PyPDF2</code>
+                                            </p>
+                                        </div>
+                                        <div>
+                                            {% if settings|selectattr('key', 'equalto', 'feature_pdf_installed')|map(attribute='value')|first|default('false') == 'true' %}
+                                                <span class="badge bg-success">Installed</span>
+                                            {% else %}
+                                                <a href="{{ url_for('install_feature', feature='pdf') }}" class="btn btn-sm btn-outline-primary">Install</a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">Browser-Based Crawling</h6>
+                                            <p class="mb-1 text-muted small">Render JavaScript-heavy sites and extract dynamic content</p>
+                                            <p class="mb-0 small">
+                                                <code>pip install "crawl4ai[browser]"</code> or 
+                                                <code>pip install playwright</code> then
+                                                <code>playwright install</code>
+                                            </p>
+                                        </div>
+                                        <div>
+                                            {% if settings|selectattr('key', 'equalto', 'feature_browser_installed')|map(attribute='value')|first|default('false') == 'true' %}
+                                                <span class="badge bg-success">Installed</span>
+                                            {% else %}
+                                                <a href="{{ url_for('install_feature', feature='browser') }}" class="btn btn-sm btn-outline-primary">Install</a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">LLM Integration</h6>
+                                            <p class="mb-1 text-muted small">Process content with language models for better extraction</p>
+                                            <p class="mb-0 small">
+                                                <code>pip install "crawl4ai[llm]"</code> or 
+                                                <code>pip install openai langchain</code>
+                                            </p>
+                                        </div>
+                                        <div>
+                                            {% if settings|selectattr('key', 'equalto', 'feature_llm_installed')|map(attribute='value')|first|default('false') == 'true' %}
+                                                <span class="badge bg-success">Installed</span>
+                                            {% else %}
+                                                <a href="{{ url_for('install_feature', feature='llm') }}" class="btn btn-sm btn-outline-primary">Install</a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">All Features</h6>
+                                            <p class="mb-1 text-muted small">Install all optional dependencies</p>
+                                            <p class="mb-0 small">
+                                                <code>pip install "crawl4ai[all]"</code>
+                                            </p>
+                                        </div>
+                                        <div>
+                                            {% if (settings|selectattr('key', 'equalto', 'feature_pdf_installed')|map(attribute='value')|first|default('false') == 'true') and
+                                                  (settings|selectattr('key', 'equalto', 'feature_browser_installed')|map(attribute='value')|first|default('false') == 'true') and
+                                                  (settings|selectattr('key', 'equalto', 'feature_llm_installed')|map(attribute='value')|first|default('false') == 'true') %}
+                                                <span class="badge bg-success">All Installed</span>
+                                            {% else %}
+                                                <a href="{{ url_for('install_feature', feature='all') }}" class="btn btn-sm btn-outline-primary">Install All</a>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <p class="mb-0">Note: Installation requires a server restart. This may take a few moments.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-success">Save Settings</button>
                         <a href="/" class="btn btn-outline-secondary">Back to Home</a>

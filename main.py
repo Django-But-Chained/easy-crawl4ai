@@ -132,6 +132,24 @@ def run_crawl():
             flash('crawl4ai library is not installed. Please install with: pip install crawl4ai', 'error')
             return redirect(url_for('home'))
         
+        # Check for browser support if needed
+        if use_browser:
+            import importlib.util
+            browser_module = importlib.util.find_spec('playwright')
+            if not browser_module:
+                job.status = 'failed'
+                job.error_message = "Browser-based crawling requires the 'playwright' module. Please install it from the Settings page."
+                db.session.commit()
+                flash("Browser-based crawling requires the 'playwright' module. Please install it from the Settings page.", 'error')
+                return redirect(url_for('job_detail', job_id=job.id))
+        
+        # Check for PDF support if downloading PDF files
+        if crawl_type == 'files' and 'pdf' in file_types.lower():
+            import importlib.util
+            pdf_module = importlib.util.find_spec('PyPDF2')
+            if not pdf_module:
+                flash("PDF processing is available but requires the 'PyPDF2' module. Files will be downloaded but content extraction may be limited.", 'warning')
+        
         # Set up crawler with common options
         crawler = crawl4ai.Crawler(
             use_browser=use_browser,
@@ -376,13 +394,116 @@ def init_default_settings():
         'default_file_types': 'pdf,doc,docx,xls,xlsx,ppt,pptx'
     }
     
+    # Add optional feature settings
+    import importlib.util
+    
+    # Check if PDF features are installed
+    spec = importlib.util.find_spec('PyPDF2')
+    default_settings['feature_pdf_installed'] = 'true' if spec else 'false'
+    
+    # Check if browser features are installed
+    spec = importlib.util.find_spec('playwright')
+    default_settings['feature_browser_installed'] = 'true' if spec else 'false'
+    
+    # Check if LLM features are installed
+    spec = importlib.util.find_spec('openai')
+    llm_part1 = spec is not None
+    spec = importlib.util.find_spec('langchain')
+    llm_part2 = spec is not None
+    default_settings['feature_llm_installed'] = 'true' if (llm_part1 and llm_part2) else 'false'
+    
+    # Apply settings
     for key, value in default_settings.items():
         setting = Setting.query.filter_by(key=key).first()
         if not setting:
             setting = Setting(key=key, value=value)
             db.session.add(setting)
+        elif key.startswith('feature_') and key.endswith('_installed'):
+            # Update feature installation status
+            setting.value = value
     
     db.session.commit()
+
+# Add route for installing features
+@app.route('/install-feature/<feature>')
+def install_feature(feature):
+    """Install optional crawl4ai features"""
+    import subprocess
+    import sys
+
+    # Define valid features and associated packages
+    feature_packages = {
+        'pdf': ['PyPDF2'],
+        'browser': ['playwright'],
+        'llm': ['openai', 'langchain'],
+        'all': ['crawl4ai[all]']
+    }
+    
+    if feature not in feature_packages:
+        flash(f'Invalid feature: {feature}', 'error')
+        return redirect(url_for('settings'))
+    
+    packages = feature_packages[feature]
+    try:
+        # Install packages using pip
+        for package in packages:
+            result = subprocess.run(
+                [sys.executable, '-m', 'pip', 'install', package],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            logger.info(f"Installed {package}: {result.stdout}")
+        
+        # For browser feature, we need to install playwright browsers
+        if feature == 'browser':
+            try:
+                result = subprocess.run(
+                    [sys.executable, '-m', 'playwright', 'install'],
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+                logger.info(f"Installed playwright browsers: {result.stdout}")
+            except subprocess.CalledProcessError as e:
+                logger.error(f"Error installing playwright browsers: {e}")
+                flash(f'Error installing playwright browsers: {e}', 'error')
+        
+        # Record installation in settings
+        feature_setting_key = f"feature_{feature}_installed"
+        setting = Setting.query.filter_by(key=feature_setting_key).first()
+        if not setting:
+            setting = Setting(key=feature_setting_key, value='true')
+            db.session.add(setting)
+        else:
+            setting.value = 'true'
+        db.session.commit()
+        
+        flash(f'Successfully installed {feature} feature!', 'success')
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error installing packages: {e}")
+        flash(f'Error installing packages: {e}', 'error')
+    
+    return redirect(url_for('settings'))
+
+# Add route for status check of optional features
+@app.route('/check-features')
+def check_features():
+    """Check which optional features are available"""
+    import importlib.util
+    
+    features = {
+        'pdf': {'module': 'PyPDF2', 'installed': False},
+        'browser': {'module': 'playwright', 'installed': False},
+        'llm': {'module': 'openai', 'installed': False}
+    }
+    
+    # Check which modules are installed
+    for feature, info in features.items():
+        spec = importlib.util.find_spec(info['module'])
+        features[feature]['installed'] = spec is not None
+    
+    return jsonify(features)
 
 # Initialize settings when the app starts
 with app.app_context():
