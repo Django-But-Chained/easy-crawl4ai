@@ -73,6 +73,8 @@ setup(
         "console_scripts": [
             "easy_crawl4ai=easy_crawl4ai:cli",
             "easy_crawl4ai_web=easy_crawl4ai.web_app:main",
+            "easy_crawl4ai_crossplatform=easy_crawl4ai.crossplatform.web_app:main",
+            "easy_crawl4ai_crossplatform_cli=easy_crawl4ai.crossplatform.cli:cli",
         ],
     },
     include_package_data=True,

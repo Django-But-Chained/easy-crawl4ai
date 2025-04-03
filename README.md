@@ -9,6 +9,7 @@ A user-friendly wrapper for the crawl4ai web crawler, designed to make web scrap
 - **Multiple URL crawling**: Process a list of URLs in parallel 
 - **Deep crawling**: Follow links from a starting URL to discover and crawl additional pages
 - **File downloading**: Find and download specific file types (PDF, DOC, etc.) from websites
+- **Speed control**: Adaptive delays, random delays, and scheduled breaks to respect websites
 
 ### Web Interface
 - **Job-based crawling**: Submit crawling tasks through a browser and view results
@@ -19,6 +20,10 @@ A user-friendly wrapper for the crawl4ai web crawler, designed to make web scrap
 ### Output Formats
 - Multiple output formats supported: Markdown, HTML, plain text, and JSON
 - Ability to view or download results directly from the web interface
+
+### Platform Support
+- **Linux version**: Optimized for Linux environments (default version)
+- **Cross-platform version**: Compatible with Windows, macOS, and Linux
 
 ## Installation
 
@@ -33,6 +38,8 @@ A user-friendly wrapper for the crawl4ai web crawler, designed to make web scrap
    pip install -e .
    ```
 
+### Linux Version (Default)
+
 3. Run the web interface:
    ```
    python easy_crawl4ai_web.py
@@ -41,6 +48,18 @@ A user-friendly wrapper for the crawl4ai web crawler, designed to make web scrap
 4. Or use the command-line interface:
    ```
    python easy_crawl4ai.py --help
+   ```
+
+### Cross-Platform Version (Windows, macOS, Linux)
+
+3. Run the cross-platform web interface:
+   ```
+   python easy_crawl4ai_crossplatform.py
+   ```
+
+4. Or use the cross-platform command-line interface:
+   ```
+   python -m easy_crawl4ai.crossplatform.cli --help
    ```
 
 ## Requirements
@@ -54,7 +73,9 @@ A user-friendly wrapper for the crawl4ai web crawler, designed to make web scrap
 
 ## Usage
 
-### Command Line
+### Linux Version
+
+#### Command Line
 
 ```bash
 # Crawl a single URL
@@ -70,7 +91,7 @@ python easy_crawl4ai.py deep-crawl https://example.com -d 3 -p 20 -o ./deep_resu
 python easy_crawl4ai.py download-files https://example.com -o ./downloads -t pdf,docx
 ```
 
-### Web Interface
+#### Web Interface
 
 1. Start the web server:
    ```bash
@@ -78,6 +99,33 @@ python easy_crawl4ai.py download-files https://example.com -o ./downloads -t pdf
    ```
 
 2. Open your browser and navigate to `http://localhost:5000`
+
+3. Use the web interface to submit and manage crawling jobs
+
+### Cross-Platform Version
+
+#### Command Line
+
+```bash
+# On Windows
+python -m easy_crawl4ai.crossplatform.cli crawl https://example.com -o ./results -f markdown
+
+# On macOS
+python -m easy_crawl4ai.crossplatform.cli crawl-multiple https://example.com https://another.com -o ./results
+
+# On any platform
+python -m easy_crawl4ai.crossplatform.cli deep-crawl https://example.com -d 3 -p 20 -o ./deep_results
+python -m easy_crawl4ai.crossplatform.cli download-files https://example.com -o ./downloads -t pdf,docx
+```
+
+#### Web Interface
+
+1. Start the cross-platform web server:
+   ```bash
+   python easy_crawl4ai_crossplatform.py
+   ```
+
+2. Your browser should open automatically to `http://localhost:5000`
 
 3. Use the web interface to submit and manage crawling jobs
 
