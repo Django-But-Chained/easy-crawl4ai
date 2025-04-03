@@ -1,0 +1,423 @@
+{% extends "base.html" %}
+
+{% block title %}Content Analysis - Easy Crawl4AI{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-9">
+        <h1>Content Analysis</h1>
+        <p class="lead">AI-powered quality insights for "{{ result.title|default('Untitled Content', true)|truncate(50) }}"</p>
+    </div>
+    <div class="col-md-3 text-end">
+        <a href="{{ url_for('analysis_list') }}" class="btn btn-secondary mt-2">
+            <i class="bi bi-list me-2"></i> All Analyses
+        </a>
+        <a href="{{ url_for('view_file', filename=result.output_file.split('/')[-1]) }}" class="btn btn-primary mt-2">
+            <i class="bi bi-file-text me-2"></i> View Content
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Content Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <th style="width: 35%">URL:</th>
+                                    <td>{{ result.url }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Title:</th>
+                                    <td>{{ result.title|default('No Title', true) }}</td>
+                                </tr>
+                                <tr>
+                                    <th>File Type:</th>
+                                    <td>{{ result.output_file.split('.')[-1]|upper }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-sm">
+                            <tbody>
+                                <tr>
+                                    <th style="width: 35%">Analysis Date:</th>
+                                    <td>{{ result.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Word Count:</th>
+                                    <td>
+                                        {% if result.content_insights and result.content_insights.basic_metrics %}
+                                            {{ result.content_insights.basic_metrics.word_count }}
+                                        {% else %}
+                                            {{ result.word_count|default('Unknown', true) }}
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>Analysis Level:</th>
+                                    <td>
+                                        {% if result.content_insights and result.content_insights.ai_analysis %}
+                                            <span class="badge bg-primary">Full Analysis</span>
+                                        {% else %}
+                                            <span class="badge bg-secondary">Basic Analysis</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if result.content_insights %}
+        <!-- AI Summary Card (if available) -->
+        {% if result.content_insights.ai_analysis and result.content_insights.ai_analysis.status == 'success' %}
+        <div class="col-md-12 mb-4">
+            <div class="card border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">AI Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <p class="card-text">{{ result.content_insights.ai_analysis.insights.summary }}</p>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center mb-3">
+                                <h2 class="display-4">{{ result.content_insights.ai_analysis.insights.quality_score }}/10</h2>
+                                <p class="text-muted">Content Quality Score</p>
+                            </div>
+                            <div class="text-center">
+                                <span class="badge {% if result.content_insights.ai_analysis.insights.quality_score >= 8 %}bg-success{% elif result.content_insights.ai_analysis.insights.quality_score >= 6 %}bg-primary{% elif result.content_insights.ai_analysis.insights.quality_score >= 4 %}bg-warning{% else %}bg-danger{% endif %} p-2">
+                                    {{ result.content_insights.ai_analysis.insights.quality_assessment }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Tabs for detailed metrics -->
+        <div class="col-md-12">
+            <ul class="nav nav-tabs" id="contentTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="metrics-tab" data-bs-toggle="tab" data-bs-target="#metrics" type="button" role="tab" aria-controls="metrics" aria-selected="true">Basic Metrics</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="readability-tab" data-bs-toggle="tab" data-bs-target="#readability" type="button" role="tab" aria-controls="readability" aria-selected="false">Readability</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="structure-tab" data-bs-toggle="tab" data-bs-target="#structure" type="button" role="tab" aria-controls="structure" aria-selected="false">Content Structure</button>
+                </li>
+                {% if result.content_insights.ai_analysis and result.content_insights.ai_analysis.status == 'success' %}
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="insights-tab" data-bs-toggle="tab" data-bs-target="#insights" type="button" role="tab" aria-controls="insights" aria-selected="false">AI Insights</button>
+                </li>
+                {% endif %}
+            </ul>
+            <div class="tab-content p-3 border border-top-0 rounded-bottom" id="contentTabsContent">
+                <!-- Basic Metrics Tab -->
+                <div class="tab-pane fade show active" id="metrics" role="tabpanel" aria-labelledby="metrics-tab">
+                    {% if result.content_insights.basic_metrics %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Text Statistics</h5>
+                            <table class="table table-striped">
+                                <tr>
+                                    <th>Word Count:</th>
+                                    <td>{{ result.content_insights.basic_metrics.word_count }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Sentence Count:</th>
+                                    <td>{{ result.content_insights.basic_metrics.sentence_count }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Character Count:</th>
+                                    <td>{{ result.content_insights.basic_metrics.character_count }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Unique Words:</th>
+                                    <td>{{ result.content_insights.basic_metrics.unique_words }} ({{ (result.content_insights.basic_metrics.unique_word_ratio * 100)|round|int }}%)</td>
+                                </tr>
+                                <tr>
+                                    <th>Avg. Word Length:</th>
+                                    <td>{{ result.content_insights.basic_metrics.avg_word_length }} characters</td>
+                                </tr>
+                                <tr>
+                                    <th>Avg. Sentence Length:</th>
+                                    <td>{{ result.content_insights.basic_metrics.avg_sentence_length }} words</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Top Keywords</h5>
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Keyword</th>
+                                        <th>Count</th>
+                                        <th>Frequency</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for keyword in result.content_insights.basic_metrics.top_keywords %}
+                                    <tr>
+                                        <td>{{ keyword.word }}</td>
+                                        <td>{{ keyword.count }}</td>
+                                        <td>{{ (keyword.count / result.content_insights.basic_metrics.word_count * 100)|round(2) }}%</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">No basic metrics available</div>
+                    {% endif %}
+                </div>
+                
+                <!-- Readability Tab -->
+                <div class="tab-pane fade" id="readability" role="tabpanel" aria-labelledby="readability-tab">
+                    {% if result.content_insights.readability %}
+                    <div class="alert {% if result.content_insights.readability.flesch_reading_ease > 60 %}alert-success{% elif result.content_insights.readability.flesch_reading_ease > 30 %}alert-warning{% else %}alert-danger{% endif %} mb-4">
+                        <h5 class="alert-heading">Readability Assessment</h5>
+                        <p>{{ result.content_insights.readability.readability_assessment }}</p>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Readability Scores</h5>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-striped">
+                                        <tr>
+                                            <th>Flesch Reading Ease:</th>
+                                            <td>
+                                                {{ result.content_insights.readability.flesch_reading_ease|round(1) }}
+                                                <div class="progress mt-1" style="height: 8px;">
+                                                    <div class="progress-bar {% if result.content_insights.readability.flesch_reading_ease > 60 %}bg-success{% elif result.content_insights.readability.flesch_reading_ease > 30 %}bg-warning{% else %}bg-danger{% endif %}" 
+                                                         style="width: {{ result.content_insights.readability.flesch_reading_ease }}%"></div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>Flesch-Kincaid Grade Level:</th>
+                                            <td>{{ result.content_insights.readability.flesch_kincaid_grade|round(1) }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Syllable Count:</th>
+                                            <td>{{ result.content_insights.readability.syllable_count }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Avg. Syllables per Word:</th>
+                                            <td>{{ result.content_insights.readability.avg_syllables_per_word|round(2) }}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Readability Scales Explained</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p><strong>Flesch Reading Ease:</strong> Scores range from 0-100. Higher scores indicate easier reading.</p>
+                                    <ul>
+                                        <li>90-100: Very easy (5th grade)</li>
+                                        <li>80-90: Easy (6th grade)</li>
+                                        <li>70-80: Fairly easy (7th grade)</li>
+                                        <li>60-70: Standard (8th-9th grade)</li>
+                                        <li>50-60: Fairly difficult (10th-12th grade)</li>
+                                        <li>30-50: Difficult (College)</li>
+                                        <li>0-30: Very difficult (College graduate)</li>
+                                    </ul>
+                                    <p><strong>Flesch-Kincaid Grade Level:</strong> Corresponds to U.S. grade level required to understand the text.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">No readability metrics available</div>
+                    {% endif %}
+                </div>
+                
+                <!-- Structure Tab -->
+                <div class="tab-pane fade" id="structure" role="tabpanel" aria-labelledby="structure-tab">
+                    {% if result.content_insights.content_structure %}
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="alert alert-info mb-4">
+                                <h5 class="alert-heading">Style Assessment</h5>
+                                <p>{{ result.content_insights.content_structure.style_assessment }}</p>
+                            </div>
+                            <div class="alert alert-info">
+                                <h5 class="alert-heading">Organization Assessment</h5>
+                                <p>{{ result.content_insights.content_structure.organization_assessment }}</p>
+                            </div>
+                            
+                            <table class="table table-striped mt-4">
+                                <tr>
+                                    <th>Paragraph Count:</th>
+                                    <td>{{ result.content_insights.content_structure.paragraph_count }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Estimated Sections:</th>
+                                    <td>{{ result.content_insights.content_structure.estimated_sections }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Noun-Verb Ratio:</th>
+                                    <td>{{ result.content_insights.content_structure.noun_verb_ratio|round(2) }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Parts of Speech Distribution</h5>
+                            <div class="card">
+                                <div class="card-body">
+                                    <table class="table table-striped">
+                                        <tr>
+                                            <th>Nouns:</th>
+                                            <td>
+                                                {{ result.content_insights.content_structure.pos_distribution.nouns }}%
+                                                <div class="progress mt-1" style="height: 8px;">
+                                                    <div class="progress-bar" style="width: {{ result.content_insights.content_structure.pos_distribution.nouns }}%"></div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>Verbs:</th>
+                                            <td>
+                                                {{ result.content_insights.content_structure.pos_distribution.verbs }}%
+                                                <div class="progress mt-1" style="height: 8px;">
+                                                    <div class="progress-bar bg-success" style="width: {{ result.content_insights.content_structure.pos_distribution.verbs }}%"></div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>Adjectives:</th>
+                                            <td>
+                                                {{ result.content_insights.content_structure.pos_distribution.adjectives }}%
+                                                <div class="progress mt-1" style="height: 8px;">
+                                                    <div class="progress-bar bg-info" style="width: {{ result.content_insights.content_structure.pos_distribution.adjectives }}%"></div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>Adverbs:</th>
+                                            <td>
+                                                {{ result.content_insights.content_structure.pos_distribution.adverbs }}%
+                                                <div class="progress mt-1" style="height: 8px;">
+                                                    <div class="progress-bar bg-warning" style="width: {{ result.content_insights.content_structure.pos_distribution.adverbs }}%"></div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info">No structure metrics available</div>
+                    {% endif %}
+                </div>
+                
+                <!-- AI Insights Tab -->
+                {% if result.content_insights.ai_analysis and result.content_insights.ai_analysis.status == 'success' %}
+                <div class="tab-pane fade" id="insights" role="tabpanel" aria-labelledby="insights-tab">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Content Strengths</h5>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-group list-group-flush">
+                                        {% for strength in result.content_insights.ai_analysis.insights.strengths %}
+                                        <li class="list-group-item">
+                                            <i class="bi bi-check-circle-fill text-success me-2"></i> {{ strength }}
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Target Audience</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>{{ result.content_insights.ai_analysis.insights.target_audience }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card mb-3">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Improvement Areas</h5>
+                                </div>
+                                <div class="card-body">
+                                    <ul class="list-group list-group-flush">
+                                        {% for area in result.content_insights.ai_analysis.insights.improvement_areas %}
+                                        <li class="list-group-item">
+                                            <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i> {{ area }}
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">Content Purpose</h5>
+                                </div>
+                                <div class="card-body">
+                                    <p>{{ result.content_insights.ai_analysis.insights.content_purpose }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-header">
+                            <h5 class="card-title mb-0">Recommendations</h5>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                {% for recommendation in result.content_insights.ai_analysis.insights.recommendations %}
+                                <li class="list-group-item">
+                                    <i class="bi bi-lightbulb-fill text-primary me-2"></i> {{ recommendation }}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    {% else %}
+    <div class="col-md-12">
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <strong>No analysis data available.</strong> This content has not been analyzed or the analysis failed.
+            <a href="{{ url_for('analyze_content', result_id=result.id) }}" class="btn btn-primary btn-sm ms-3">Analyze Now</a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

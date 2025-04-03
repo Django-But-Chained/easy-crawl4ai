@@ -63,6 +63,31 @@
                             {% if settings|selectattr('key', 'equalto', 'enable_browser_crawling')|map(attribute='value')|first == 'true' %}checked{% endif %}>
                         <label class="form-check-label" for="enable_browser_crawling">Enable Browser-Based Crawling by Default</label>
                     </div>
+
+                    <h5 class="mt-4 mb-3">Content Analysis Settings</h5>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="enable_content_analysis" name="setting_enable_content_analysis" 
+                            {% if settings|selectattr('key', 'equalto', 'enable_content_analysis')|map(attribute='value')|first == 'true' %}checked{% endif %}>
+                        <label class="form-check-label" for="enable_content_analysis">Enable AI-Powered Content Analysis</label>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="content_analysis_default" class="form-label">Default Analysis Level</label>
+                        <select class="form-select" id="content_analysis_default" name="setting_content_analysis_default">
+                            <option value="none" {% if settings|selectattr('key', 'equalto', 'content_analysis_default')|map(attribute='value')|first == 'none' %}selected{% endif %}>None (Disable)</option>
+                            <option value="basic" {% if settings|selectattr('key', 'equalto', 'content_analysis_default')|map(attribute='value')|first == 'basic' %}selected{% endif %}>Basic (Text metrics only)</option>
+                            <option value="full" {% if settings|selectattr('key', 'equalto', 'content_analysis_default')|map(attribute='value')|first == 'full' %}selected{% endif %}>Full (Including AI analysis)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="openai_api_key" class="form-label">OpenAI API Key</label>
+                        <input type="password" class="form-control" id="openai_api_key" name="setting_openai_api_key" 
+                            value="{{ settings|selectattr('key', 'equalto', 'openai_api_key')|map(attribute='value')|first|default('') }}"
+                            autocomplete="off" placeholder="sk-...">
+                        <div class="form-text">Required for AI-powered content analysis. Your API key is securely stored and never shared.</div>
+                    </div>
                     
                     <button type="submit" class="btn btn-primary">Save Settings</button>
                 </form>

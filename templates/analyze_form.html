@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Analyze Content - Easy Crawl4AI{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Analyze Content</h1>
+        <p class="lead">Generate AI-powered insights for crawled content</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Content Information</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <th style="width: 30%">URL:</th>
+                            <td>{{ result.url }}</td>
+                        </tr>
+                        <tr>
+                            <th>Title:</th>
+                            <td>{{ result.title|default('No Title', true) }}</td>
+                        </tr>
+                        <tr>
+                            <th>Content Size:</th>
+                            <td>{{ result.word_count|default('Unknown', true) }} words</td>
+                        </tr>
+                        <tr>
+                            <th>File:</th>
+                            <td>{{ result.output_file.split('/')[-1] }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        {% if has_analysis %}
+            <div class="alert alert-info">
+                <i class="bi bi-info-circle-fill me-2"></i> This content has already been analyzed.
+                <a href="{{ url_for('view_analysis', result_id=result.id) }}" class="btn btn-sm btn-primary ms-3">View Existing Analysis</a>
+            </div>
+        {% endif %}
+
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Analysis Options</h5>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    <div class="mb-3">
+                        <label for="analysis_level" class="form-label">Analysis Level</label>
+                        <select class="form-select" id="analysis_level" name="analysis_level">
+                            <option value="basic">Basic (Metrics & Readability)</option>
+                            <option value="full">Full (Including AI-powered insights)</option>
+                        </select>
+                        <div class="form-text">
+                            Full analysis uses AI capabilities and requires an OpenAI API key.
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="api_key" class="form-label">OpenAI API Key</label>
+                        <input type="password" class="form-control" id="api_key" name="api_key" placeholder="sk-...">
+                        <div class="form-text">
+                            Required for AI-powered analysis. Your key is only used for this request and not stored.
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="bi bi-lightbulb-fill me-2"></i> <strong>About Content Analysis:</strong>
+                        <p class="mt-2">
+                            The analysis provides insights on text quality, readability, structure, and more.
+                            Basic analysis uses statistical methods, while full analysis leverages AI for deeper insights.
+                        </p>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <i class="bi bi-key-fill me-2"></i> <strong>API Key Required:</strong>
+                        <p class="mt-2">
+                            For full AI-powered analysis, an OpenAI API key is required. You can get one from the 
+                            <a href="https://platform.openai.com/account/api-keys" target="_blank">OpenAI website</a>.
+                            If you don't have an API key, you can still use the basic analysis features.
+                        </p>
+                        <p>
+                            You can also store your API key permanently in the <a href="{{ url_for('settings') }}">Settings</a> page.
+                        </p>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-search me-2"></i> Analyze Content
+                        </button>
+                        <a href="{{ url_for('job_detail', job_id=result.job_id) }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left me-2"></i> Back to Job
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

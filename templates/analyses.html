@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Content Analyses - Easy Crawl4AI{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Content Analyses</h1>
+        <p class="lead">View AI-powered content quality insights for crawled pages</p>
+    </div>
+</div>
+
+{% if analyses %}
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>URL</th>
+                <th>Title</th>
+                <th>Word Count</th>
+                <th>Reading Level</th>
+                <th>Quality Score</th>
+                <th>Analysis Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for analysis in analyses %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td><small>{{ analysis.url|truncate(30) }}</small></td>
+                <td>{{ analysis.title|default('No Title', true)|truncate(30) }}</td>
+                <td>
+                    {% if analysis.content_insights.basic_metrics %}
+                        {{ analysis.content_insights.basic_metrics.word_count }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+                <td>
+                    {% if analysis.content_insights.readability %}
+                        {{ analysis.content_insights.readability.flesch_kincaid_grade|round(1) }}
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+                <td>
+                    {% if analysis.content_insights.ai_analysis and analysis.content_insights.ai_analysis.status == 'success' %}
+                        {{ analysis.content_insights.ai_analysis.insights.quality_score }}/10
+                    {% else %}
+                        N/A
+                    {% endif %}
+                </td>
+                <td>{{ analysis.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                <td>
+                    <a href="{{ url_for('view_analysis', result_id=analysis.id) }}" class="btn btn-sm btn-primary">View Analysis</a>
+                    <a href="{{ url_for('job_detail', job_id=analysis.job_id) }}" class="btn btn-sm btn-secondary">View Job</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="alert alert-info">
+    <i class="bi bi-info-circle me-2"></i> No content analyses found. 
+    <p class="mt-2">
+        To analyze content, first crawl a website using the home page form, then click the "Analyze" button next to a crawl result.
+    </p>
+</div>
+{% endif %}
+
+{% endblock %}

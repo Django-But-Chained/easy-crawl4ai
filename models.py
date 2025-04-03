@@ -78,6 +78,7 @@ class CrawlResult(db.Model):
     word_count = Column(Integer, nullable=True)
     link_count = Column(Integer, nullable=True)
     image_count = Column(Integer, nullable=True)
+    content_insights = Column(JSON, nullable=True)  # Store AI-powered insights
     created_at = Column(DateTime, default=datetime.utcnow)
     
     def __repr__(self):
@@ -95,6 +96,7 @@ class CrawlResult(db.Model):
             'word_count': self.word_count,
             'link_count': self.link_count,
             'image_count': self.image_count,
+            'content_insights': self.content_insights,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
