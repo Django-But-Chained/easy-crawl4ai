@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """
 Easy Crawl4AI Web Interface - A user-friendly web interface for the crawl4ai web crawler
+
+This script provides a simplified web interface to the powerful crawl4ai
+web crawler library, making it accessible for users without technical expertise.
 """
 
 import os
@@ -15,28 +18,6 @@ from urllib.parse import urlparse
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 logger = logging.getLogger(__name__)
 
-# Import error handler
-try:
-    from error_handler import format_error_message, format_error_html
-except ImportError:
-    # Define minimal versions if error_handler.py is not available
-    def format_error_message(exception, include_exception_details=False):
-        return {
-            "category": "Error",
-            "message": str(exception),
-            "suggestion": "Please try again or contact support."
-        }
-    
-    def format_error_html(exception, include_traceback=False):
-        return f"""
-        <div class="alert alert-danger">
-            <h4 class="alert-heading">Error</h4>
-            <p><strong>{str(exception)}</strong></p>
-            <hr>
-            <p class="mb-0">Please try again or contact support.</p>
-        </div>
-        """
-
 try:
     from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory, jsonify
 except ImportError:
@@ -44,27 +25,185 @@ except ImportError:
     print("Then restart the application.")
     sys.exit(1)
 
-# Import app and database
-from app import app, db
-from models import CrawlJob, CrawlResult, Setting
+try:
+    from flask_sqlalchemy import SQLAlchemy
+    from sqlalchemy.orm import DeclarativeBase
+    from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, JSON
+except ImportError:
+    print("Flask-SQLAlchemy or SQLAlchemy is not installed.")
+    print("Please install with: pip install flask-sqlalchemy sqlalchemy")
+    print("Then restart the application.")
+    sys.exit(1)
+
+
+# Define the Flask application and database
+class Base(DeclarativeBase):
+    pass
+
+
+db = SQLAlchemy(model_class=Base)
+
+
+def create_app():
+    """Create and configure the Flask application"""
+    app = Flask(__name__)
+    app.secret_key = os.environ.get("SESSION_SECRET", os.urandom(24).hex())
+
+    # Configure the database - make sure we have DATABASE_URL from environment
+    database_url = os.environ.get("DATABASE_URL")
+    if not database_url:
+        # If no database URL is provided, use a default SQLite database
+        print("WARNING: DATABASE_URL not set. Using SQLite database.")
+        database_url = "sqlite:///crawl4ai.db"
+
+    app.config["SQLALCHEMY_DATABASE_URI"] = database_url
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+        "pool_recycle": 300,
+        "pool_pre_ping": True,
+    }
+    app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+
+    # Initialize the app with the database extension
+    db.init_app(app)
+
+    return app
+
+
+# Initialize the Flask application
+app = create_app()
+
+
+# Define models 
+class CrawlJob(db.Model):
+    """Model for tracking crawl jobs"""
+    __tablename__ = 'crawl_jobs'
+    
+    id = Column(Integer, primary_key=True)
+    crawl_type = Column(String(50), nullable=False)  # single, multiple, deep, files
+    url = Column(String(2048), nullable=True)         # Main URL for single, deep, files
+    urls = Column(JSON, nullable=True)                # List of URLs for multiple crawl
+    output_dir = Column(String(255), nullable=False)
+    format = Column(String(20), nullable=True)
+    use_browser = Column(Boolean, default=False)
+    include_images = Column(Boolean, default=True)
+    include_links = Column(Boolean, default=True)
+    
+    # For deep crawl
+    max_depth = Column(Integer, nullable=True)
+    max_pages = Column(Integer, nullable=True)
+    stay_within_domain = Column(Boolean, default=True)
+    
+    # For file downloads
+    file_types = Column(String(255), nullable=True)
+    max_size = Column(Integer, nullable=True)
+    max_files = Column(Integer, nullable=True)
+    
+    # Metadata
+    status = Column(String(20), default='pending')  # pending, running, completed, failed
+    created_at = Column(DateTime, default=datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+    error_message = Column(Text, nullable=True)
+    pages_crawled = Column(Integer, default=0)
+    files_downloaded = Column(Integer, default=0)
+    
+    def __repr__(self):
+        return f"<CrawlJob {self.id} - {self.crawl_type} - {self.status}>"
+    
+    def to_dict(self):
+        """Convert model to dictionary"""
+        return {
+            'id': self.id,
+            'crawl_type': self.crawl_type,
+            'url': self.url,
+            'urls': self.urls,
+            'output_dir': self.output_dir,
+            'format': self.format,
+            'use_browser': self.use_browser,
+            'include_images': self.include_images,
+            'include_links': self.include_links,
+            'max_depth': self.max_depth,
+            'max_pages': self.max_pages,
+            'stay_within_domain': self.stay_within_domain,
+            'file_types': self.file_types,
+            'max_size': self.max_size,
+            'max_files': self.max_files,
+            'status': self.status,
+            'created_at': self.created_at.isoformat() if self.created_at else None,
+            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
+            'error_message': self.error_message,
+            'pages_crawled': self.pages_crawled,
+            'files_downloaded': self.files_downloaded
+        }
+
+
+class CrawlResult(db.Model):
+    """Model for storing crawl results"""
+    __tablename__ = 'crawl_results'
+    
+    id = Column(Integer, primary_key=True)
+    job_id = Column(Integer, nullable=False)
+    url = Column(String(2048), nullable=False)
+    title = Column(String(512), nullable=True)
+    output_file = Column(String(512), nullable=False)
+    content_length = Column(Integer, nullable=True)
+    word_count = Column(Integer, nullable=True)
+    link_count = Column(Integer, nullable=True)
+    image_count = Column(Integer, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    def __repr__(self):
+        return f"<CrawlResult {self.id} - {self.url}>"
+    
+    def to_dict(self):
+        """Convert model to dictionary"""
+        return {
+            'id': self.id,
+            'job_id': self.job_id,
+            'url': self.url,
+            'title': self.title,
+            'output_file': self.output_file,
+            'content_length': self.content_length,
+            'word_count': self.word_count,
+            'link_count': self.link_count,
+            'image_count': self.image_count,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class Setting(db.Model):
+    """Model for application settings"""
+    __tablename__ = 'settings'
+    
+    id = Column(Integer, primary_key=True)
+    key = Column(String(100), nullable=False, unique=True)
+    value = Column(Text, nullable=True)
+    description = Column(String(512), nullable=True)
+    
+    def __repr__(self):
+        return f"<Setting {self.key}>"
+
 
 # Default directories
 RESULTS_DIR = Path('./results')
 DOWNLOADS_DIR = Path('./downloads')
+
 
 def ensure_directory(directory: Path) -> Path:
     """Ensure the directory exists and return the Path object."""
     directory.mkdir(parents=True, exist_ok=True)
     return directory
 
+
 # Ensure directories exist
 ensure_directory(RESULTS_DIR)
 ensure_directory(DOWNLOADS_DIR)
+
 
 @app.route('/')
 def home():
     """Home page route"""
     return render_template('index.html')
+
 
 @app.route('/jobs')
 def job_list():
@@ -72,12 +211,14 @@ def job_list():
     jobs = CrawlJob.query.order_by(CrawlJob.created_at.desc()).all()
     return render_template('jobs.html', jobs=jobs)
 
+
 @app.route('/job/<int:job_id>')
 def job_detail(job_id):
     """View a specific job and its results"""
     job = CrawlJob.query.get_or_404(job_id)
     results = CrawlResult.query.filter_by(job_id=job_id).all()
     return render_template('job_detail.html', job=job, results=results)
+
 
 @app.route('/crawl', methods=['POST'])
 def run_crawl():
@@ -286,26 +427,15 @@ def run_crawl():
     except Exception as e:
         logger.error(f"Crawling error: {str(e)}")
         
-        # Format the error message using our error handler
-        error_info = format_error_message(e, include_exception_details=True)
-        
-        # Update job status with detailed error info
+        # Update job status
         job.status = 'failed'
-        job.error_message = json.dumps(error_info)
+        job.error_message = str(e)
         job.completed_at = datetime.utcnow()
         db.session.commit()
         
-        # Show a helpful flash message
-        flash(f'Error: {error_info["message"]}. {error_info["suggestion"]}', 'error')
-        
-        # Check if this is a common error with a clear solution
-        if error_info["type"] in ["browser_not_available", "dependency_not_installed"]:
-            return redirect(url_for('settings'))
-            
-        return render_template('error.html', 
-                              error=error_info, 
-                              back_url=url_for('home'),
-                              retry_url=url_for('job_detail', job_id=job.id))
+        flash(f'Error during crawling: {str(e)}', 'error')
+        return redirect(url_for('job_detail', job_id=job.id))
+
 
 def save_result_to_db(job_id, result, output_file):
     """Save a crawl result to the database"""
@@ -325,8 +455,7 @@ def save_result_to_db(job_id, result, output_file):
         db.session.commit()
     except Exception as e:
         logger.error(f"Error saving result to database: {str(e)}")
-        error_info = format_error_message(e)
-        flash(f"Error saving results: {error_info['message']}", 'warning')
+
 
 def save_result(result, output_dir, format_type, filename):
     """Save the crawl result to the specified directory with the given format."""
@@ -359,77 +488,43 @@ def save_result(result, output_dir, format_type, filename):
     
     return str(file_path)
 
+
 @app.route('/download/<path:filename>')
 def download_file(filename):
     """Download a specific file."""
     return send_from_directory(RESULTS_DIR, filename, as_attachment=True)
 
+
 @app.route('/view/<path:filename>')
 def view_file(filename):
     """View a specific file."""
-    try:
-        file_path = Path(RESULTS_DIR) / filename
-        
-        if not file_path.exists():
-            error_info = {
-                "category": "File Error",
-                "message": f"File not found: {filename}",
-                "suggestion": "The file may have been deleted or moved. Please check the job details or try crawling the URL again."
-            }
-            flash(f'File not found: {filename}', 'error')
-            return render_template('error.html', error=error_info, back_url=url_for('job_list'))
-        
-        # Try to read the file
+    file_path = Path(RESULTS_DIR) / filename
+    
+    if not file_path.exists():
+        flash(f'File not found: {filename}', 'error')
+        return redirect(url_for('home'))
+    
+    with open(file_path, 'r', encoding='utf-8') as f:
+        content = f.read()
+    
+    # Determine file type
+    if filename.endswith('.md'):
+        # This template would include a Markdown renderer
+        return render_template('view_markdown.html', filename=filename, content=content)
+    elif filename.endswith('.html'):
+        # This displays the HTML in an iframe or directly
+        return render_template('view_html.html', filename=filename, content=content)
+    elif filename.endswith('.json'):
+        # Pretty-print JSON
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
-        except UnicodeDecodeError:
-            # Try with a different encoding
-            try:
-                with open(file_path, 'r', encoding='latin-1') as f:
-                    content = f.read()
-            except Exception:
-                error_info = {
-                    "category": "File Error",
-                    "message": f"Cannot read file: {filename}",
-                    "suggestion": "The file encoding is not supported. Try downloading the file instead of viewing it."
-                }
-                return render_template('error.html', error=error_info, 
-                                      back_url=url_for('job_list'),
-                                      retry_url=url_for('download_file', filename=filename))
-        
-        # Determine file type
-        if filename.endswith('.md'):
-            # This template would include a Markdown renderer
-            return render_template('view_markdown.html', filename=filename, content=content)
-        elif filename.endswith('.html'):
-            # This displays the HTML in an iframe or directly
-            return render_template('view_html.html', filename=filename, content=content)
-        elif filename.endswith('.json'):
-            # Pretty-print JSON
-            try:
-                pretty_json = json.dumps(json.loads(content), indent=4)
-                return render_template('view_json.html', filename=filename, content=pretty_json)
-            except json.JSONDecodeError:
-                error_info = {
-                    "category": "Parse Error",
-                    "message": "Cannot parse JSON file",
-                    "suggestion": "The file doesn't contain valid JSON data. Viewing as plain text instead."
-                }
-                flash("Cannot parse JSON file. Viewing as plain text instead.", 'warning')
-                return render_template('view_text.html', filename=filename, content=content)
-        else:
-            # Plain text view
+            pretty_json = json.dumps(json.loads(content), indent=4)
+            return render_template('view_json.html', filename=filename, content=pretty_json)
+        except json.JSONDecodeError:
             return render_template('view_text.html', filename=filename, content=content)
-            
-    except Exception as e:
-        # Use our error handler for any other exceptions
-        error_info = format_error_message(e)
-        logger.error(f"Error viewing file {filename}: {str(e)}")
-        return render_template('error.html', 
-                              error=error_info,
-                              back_url=url_for('job_list'),
-                              retry_url=url_for('download_file', filename=filename))
+    else:
+        # Plain text view
+        return render_template('view_text.html', filename=filename, content=content)
+
 
 @app.route('/settings', methods=['GET', 'POST'])
 def settings():
@@ -453,6 +548,90 @@ def settings():
     # Get all settings
     all_settings = Setting.query.all()
     return render_template('settings.html', settings=all_settings)
+
+
+# Add route for installing features
+@app.route('/install-feature/<feature>')
+def install_feature(feature):
+    """Install optional crawl4ai features"""
+    import subprocess
+    import sys
+
+    # Define valid features and associated packages
+    feature_packages = {
+        'pdf': ['PyPDF2'],
+        'browser': ['playwright'],
+        'llm': ['openai', 'langchain'],
+        'all': ['crawl4ai[all]']
+    }
+    
+    if feature not in feature_packages:
+        flash(f'Invalid feature: {feature}', 'error')
+        return redirect(url_for('settings'))
+    
+    packages = feature_packages[feature]
+    try:
+        # Install packages using pip
+        for package in packages:
+            result = subprocess.run(
+                [sys.executable, '-m', 'pip', 'install', package],
+                capture_output=True,
+                text=True,
+                check=True
+            )
+            logger.info(f"Installed {package}: {result.stdout}")
+        
+        # For browser feature, we need to install playwright browsers
+        if feature == 'browser':
+            try:
+                result = subprocess.run(
+                    [sys.executable, '-m', 'playwright', 'install'],
+                    capture_output=True,
+                    text=True,
+                    check=True
+                )
+                logger.info(f"Installed playwright browsers: {result.stdout}")
+            except subprocess.CalledProcessError as e:
+                logger.error(f"Error installing playwright browsers: {e}")
+                flash(f'Error installing playwright browsers: {e}', 'error')
+        
+        # Record installation in settings
+        feature_setting_key = f"feature_{feature}_installed"
+        setting = Setting.query.filter_by(key=feature_setting_key).first()
+        if not setting:
+            setting = Setting(key=feature_setting_key, value='true')
+            db.session.add(setting)
+        else:
+            setting.value = 'true'
+        db.session.commit()
+        
+        flash(f'Successfully installed {feature} feature!', 'success')
+    except subprocess.CalledProcessError as e:
+        logger.error(f"Error installing packages: {e}")
+        flash(f'Error installing packages: {e}', 'error')
+    
+    return redirect(url_for('settings'))
+
+
+# Add route for status check of optional features
+@app.route('/check-features')
+def check_features():
+    """Check which optional features are available"""
+    import importlib.util
+    
+    features = {
+        'pdf': {'module': 'PyPDF2', 'installed': False},
+        'browser': {'module': 'playwright', 'installed': False},
+        'llm': {'module': 'openai', 'installed': False}
+    }
+    
+    # Check which modules are installed
+    for feature, info in features.items():
+        spec = importlib.util.find_spec(info['module'])
+        features[feature]['installed'] = spec is not None
+    
+    return jsonify(features)
+
 
 # Initialize default settings if they don't exist
 def init_default_settings():
@@ -497,169 +676,22 @@ def init_default_settings():
     
     db.session.commit()
 
-# Add route for installing features
-@app.route('/install-feature/<feature>')
-def install_feature(feature):
-    """Install optional crawl4ai features"""
-    import subprocess
-    import sys
 
-    # Define valid features and associated packages
-    feature_packages = {
-        'pdf': ['PyPDF2'],
-        'browser': ['playwright'],
-        'llm': ['openai', 'langchain'],
-        'all': ['PyPDF2', 'playwright', 'openai', 'langchain']
-    }
-    
-    if feature not in feature_packages:
-        flash(f'Invalid feature: {feature}', 'error')
-        return redirect(url_for('settings'))
-    
-    packages = feature_packages[feature]
-    try:
-        # Install packages using pip
-        for package in packages:
-            result = subprocess.run(
-                [sys.executable, '-m', 'pip', 'install', package],
-                capture_output=True,
-                text=True,
-                check=True
-            )
-            logger.info(f"Installed {package}: {result.stdout}")
-        
-        # For browser feature, we need to install playwright browsers
-        if feature == 'browser' or feature == 'all':
-            try:
-                result = subprocess.run(
-                    [sys.executable, '-m', 'playwright', 'install'],
-                    capture_output=True,
-                    text=True,
-                    check=True
-                )
-                logger.info(f"Installed playwright browsers: {result.stdout}")
-            except subprocess.CalledProcessError as e:
-                logger.error(f"Error installing playwright browsers: {e}")
-                flash(f'Error installing playwright browsers: {e}', 'error')
-        
-        # Record installation in settings
-        feature_setting_key = f"feature_{feature}_installed"
-        setting = Setting.query.filter_by(key=feature_setting_key).first()
-        if not setting:
-            setting = Setting(key=feature_setting_key, value='true')
-            db.session.add(setting)
-        else:
-            setting.value = 'true'
-        db.session.commit()
-        
-        flash(f'Successfully installed {feature} feature!', 'success')
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Error installing packages: {e}")
-        
-        # Format a helpful error message
-        error_info = {
-            "category": "Dependency Error",
-            "message": f"Failed to install {feature} feature.",
-            "suggestion": "Check your internet connection and try again. If the problem persists, you may need to manually install the packages or contact support."
-        }
-        
-        # If we have stderr output, include it for more detail
-        if e.stderr:
-            error_info["exception"] = {
-                "type": "Installation Error",
-                "message": e.stderr
-            }
-            
-        # Save the error in a session variable to display on the error page
-        flash(f'Error installing {feature} feature. Please check your internet connection and try again.', 'error')
-        
-        # Log detailed error
-        logger.error(f"Package installation error: {e.stderr if e.stderr else str(e)}")
-    
-    return redirect(url_for('settings'))
+def init_db():
+    """Initialize the database"""
+    with app.app_context():
+        db.create_all()
+        init_default_settings()
 
-# Add route for status check of optional features
-@app.route('/check-features')
-def check_features():
-    """Check which optional features are available"""
-    import importlib.util
-    
-    features = {
-        'pdf': {'module': 'PyPDF2', 'installed': False},
-        'browser': {'module': 'playwright', 'installed': False},
-        'llm': {'module': 'openai', 'installed': False}
-    }
-    
-    # Check which modules are installed
-    for feature, info in features.items():
-        spec = importlib.util.find_spec(info['module'])
-        features[feature]['installed'] = spec is not None
-    
-    return jsonify(features)
 
-# Add a general error route
-@app.route('/error')
-def error_page():
-    """Display an error page with helpful information"""
-    error_type = request.args.get('type', 'unknown_error')
-    back_url = request.args.get('back_url', url_for('home'))
-    retry_url = request.args.get('retry_url')
+def run_app():
+    """Run the Flask application"""
+    # Initialize the database
+    init_db()
     
-    # Get error information from our predefined error types
-    from error_handler import ERROR_MESSAGES
-    error_info = ERROR_MESSAGES.get(error_type, ERROR_MESSAGES['unknown_error'])
-    
-    # Check for custom message
-    custom_message = request.args.get('message')
-    if custom_message:
-        error_info = error_info.copy()
-        error_info['message'] = custom_message
-    
-    # Check for custom suggestion
-    custom_suggestion = request.args.get('suggestion')
-    if custom_suggestion:
-        error_info = error_info.copy()
-        error_info['suggestion'] = custom_suggestion
-    
-    return render_template('error.html', 
-                          error=error_info,
-                          back_url=back_url,
-                          retry_url=retry_url)
+    # Run the app
+    app.run(host='0.0.0.0', port=5000, debug=True)
 
-# Set up error handlers for common HTTP errors
-@app.errorhandler(404)
-def not_found_error(error):
-    """Handle 404 errors"""
-    error_info = {
-        "category": "Page Not Found",
-        "message": "The page you requested could not be found.",
-        "suggestion": "Check the URL and try again, or go back to the home page."
-    }
-    return render_template('error.html', error=error_info, back_url=url_for('home')), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    """Handle 500 errors"""
-    db.session.rollback()  # Roll back any failed database transactions
-    
-    error_info = {
-        "category": "Server Error",
-        "message": "An unexpected error occurred on the server.",
-        "suggestion": "Please try again later. If the problem persists, contact the administrator."
-    }
-    
-    if app.debug:
-        # In debug mode, add the actual error
-        error_info["exception"] = {
-            "type": type(error).__name__,
-            "message": str(error)
-        }
-    
-    return render_template('error.html', error=error_info, back_url=url_for('home')), 500
-
-# Initialize settings when the app starts
-with app.app_context():
-    init_default_settings()
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    run_app()

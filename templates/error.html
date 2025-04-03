@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}Error - {{ error.category }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <div class="card border-danger mb-4">
+                <div class="card-header bg-danger text-white">
+                    <h4 class="mb-0">{{ error.category }}</h4>
+                </div>
+                <div class="card-body">
+                    <div class="error-icon text-center mb-3">
+                        <i class="bi bi-exclamation-triangle-fill text-danger" style="font-size: 3rem;"></i>
+                    </div>
+                    
+                    <h5 class="card-title">{{ error.message }}</h5>
+                    
+                    <div class="alert alert-secondary">
+                        <div class="d-flex">
+                            <div class="me-3">
+                                <i class="bi bi-lightbulb-fill text-warning" style="font-size: 1.5rem;"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-1">Suggestion:</h6>
+                                <p class="mb-0">{{ error.suggestion }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if error.exception %}
+                    <div class="mt-4">
+                        <details>
+                            <summary class="text-muted">Technical Details</summary>
+                            <div class="mt-2 p-3 bg-dark text-light rounded">
+                                <code>{{ error.exception.type }}: {{ error.exception.message }}</code>
+                            </div>
+                        </details>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mt-4">
+                        <a href="{{ url_for('home') }}" class="btn btn-primary">
+                            <i class="bi bi-house-fill"></i> Return to Home
+                        </a>
+                        {% if back_url %}
+                        <a href="{{ back_url }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Go Back
+                        </a>
+                        {% endif %}
+                        
+                        {% if retry_url %}
+                        <a href="{{ retry_url }}" class="btn btn-success">
+                            <i class="bi bi-arrow-repeat"></i> Try Again
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Help Resources -->
+            <div class="card mb-4">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0">Need More Help?</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="d-flex mb-3">
+                                <div class="me-3">
+                                    <i class="bi bi-book-fill text-info" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div>
+                                    <h6>Documentation</h6>
+                                    <p class="small mb-0">Check the <a href="https://docs.crawl4ai.com/" target="_blank">crawl4ai documentation</a> for detailed information.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex mb-3">
+                                <div class="me-3">
+                                    <i class="bi bi-question-circle-fill text-info" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div>
+                                    <h6>Common Issues</h6>
+                                    <p class="small mb-0">Visit the <a href="https://docs.crawl4ai.com/core/troubleshooting" target="_blank">troubleshooting guide</a> for common problems.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <div class="d-flex mb-3">
+                                <div class="me-3">
+                                    <i class="bi bi-gear-fill text-info" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div>
+                                    <h6>Adjust Settings</h6>
+                                    <p class="small mb-0">Try <a href="{{ url_for('settings') }}">modifying the settings</a> to resolve the issue.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex mb-3">
+                                <div class="me-3">
+                                    <i class="bi bi-chat-fill text-info" style="font-size: 1.5rem;"></i>
+                                </div>
+                                <div>
+                                    <h6>Community</h6>
+                                    <p class="small mb-0">Join the <a href="https://discord.gg/jP8KfhDhyN" target="_blank">crawl4ai community</a> for help and support.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Related Errors -->
+            {% if related_errors %}
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0">Similar Issues</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group">
+                        {% for related in related_errors %}
+                        <li class="list-group-item">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <i class="bi bi-exclamation-circle text-secondary"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">{{ related.message }}</h6>
+                                    <p class="small text-muted mb-0">{{ related.suggestion }}</p>
+                                </div>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

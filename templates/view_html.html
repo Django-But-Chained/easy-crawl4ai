@@ -1,137 +1,76 @@
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View HTML - Easy Crawl4AI</title>
-    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
-    <style>
-        body {
-            padding-top: 2rem;
-            padding-bottom: 4rem;
-        }
-        .iframe-container {
-            position: relative;
-            overflow: hidden;
-            width: 100%;
-            padding-top: 56.25%; /* 16:9 Aspect Ratio */
-            border: 1px solid var(--bs-border-color);
-            border-radius: 0.375rem;
-            background-color: white;
-        }
-        .iframe-container iframe {
-            position: absolute;
-            top: 0;
-            left: 0;
-            bottom: 0;
-            right: 0;
-            width: 100%;
-            height: 100%;
-            border: none;
-        }
-        .html-content {
-            max-height: 600px;
-            overflow: auto;
-            border: 1px solid var(--bs-border-color);
-            border-radius: 0.375rem;
-            padding: 1rem;
-            background-color: var(--bs-dark);
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header class="mb-4">
-            <h1>View HTML File</h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="/">Home</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">{{ filename }}</li>
-                </ol>
-            </nav>
-            
-            <div class="btn-toolbar mb-3" role="toolbar">
-                <div class="btn-group me-2" role="group">
-                    <a href="{{ url_for('download_file', filename=filename) }}" class="btn btn-outline-info">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
-                            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                            <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
-                        </svg>
-                        Download
-                    </a>
-                    <a href="/" class="btn btn-outline-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-house" viewBox="0 0 16 16">
-                            <path d="M8.707 1.5a1 1 0 0 0-1.414 0L.646 8.146a.5.5 0 0 0 .708.708L8 2.207l6.646 6.647a.5.5 0 0 0 .708-.708L13 5.793V2.5a.5.5 0 0 0-.5-.5h-2a.5.5 0 0 0-.5.5v1.293L8.707 1.5Z"/>
-                            <path d="m8 3.293 6 6V13.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5V9.293l6-6Z"/>
-                        </svg>
-                        Home
-                    </a>
-                </div>
-            </div>
-        </header>
+{% extends "base.html" %}
 
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">{{ filename }}</h5>
-            </div>
-            <div class="card-body">
-                <!-- Rendered HTML Tab -->
-                <ul class="nav nav-tabs mb-3" id="viewTab" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="rendered-tab" data-bs-toggle="tab" data-bs-target="#rendered" type="button" role="tab" aria-controls="rendered" aria-selected="true">Rendered</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="source-tab" data-bs-toggle="tab" data-bs-target="#source" type="button" role="tab" aria-controls="source" aria-selected="false">Source</button>
-                    </li>
-                </ul>
-                
-                <div class="tab-content" id="viewTabContent">
-                    <div class="tab-pane fade show active" id="rendered" role="tabpanel" aria-labelledby="rendered-tab">
-                        <div class="iframe-container" id="iframe-container">
-                            <!-- We'll create and insert an iframe with JavaScript for better security -->
-                        </div>
-                    </div>
-                    <div class="tab-pane fade" id="source" role="tabpanel" aria-labelledby="source-tab">
-                        <div class="html-content">
-                            <pre><code class="html">{{ content|e }}</code></pre>
-                        </div>
-                    </div>
-                </div>
-            </div>
+{% block title %}View HTML - {{ filename }}{% endblock %}
+
+{% block head %}
+<style>
+    .html-wrapper {
+        border: 1px solid var(--bs-border-color);
+        border-radius: .375rem;
+        background-color: white;
+    }
+    iframe {
+        width: 100%;
+        min-height: 600px;
+        border: none;
+    }
+    pre {
+        max-height: 600px;
+        overflow: auto;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>{{ filename }}</h1>
+    <div>
+        <a href="{{ url_for('download_file', filename=filename) }}" class="btn btn-primary">Download</a>
+        <a href="javascript:history.back()" class="btn btn-secondary">Back</a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">HTML Content</h5>
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="renderToggle" checked>
+            <label class="form-check-label" for="renderToggle">Render HTML</label>
         </div>
     </div>
+    <div class="card-body p-0">
+        <div id="html-render" class="html-wrapper">
+            <iframe id="html-frame"></iframe>
+        </div>
+        <pre id="raw-content" class="p-3" style="display: none;"><code class="language-html">{{ content }}</code></pre>
+    </div>
+</div>
+{% endblock %}
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Create and set up the iframe safely
-            const iframe = document.createElement('iframe');
-            iframe.sandbox = 'allow-same-origin';
-            iframe.title = 'HTML Content';
-            
-            const container = document.getElementById('iframe-container');
-            container.appendChild(iframe);
-            
-            // Write the HTML content to the iframe
-            const htmlContent = `{{ content|safe }}`;
-            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-            iframeDoc.open();
-            iframeDoc.write(htmlContent);
-            iframeDoc.close();
-            
-            // Add base styling to the iframe content
-            const style = iframeDoc.createElement('style');
-            style.textContent = `
-                body { 
-                    font-family: system-ui, -apple-system, sans-serif;
-                    line-height: 1.5;
-                    padding: 1rem;
-                }
-                a { color: #0d6efd; }
-                img { max-width: 100%; height: auto; }
-            `;
-            iframeDoc.head.appendChild(style);
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const htmlFrame = document.getElementById('html-frame');
+        const htmlRender = document.getElementById('html-render');
+        const rawContent = document.getElementById('raw-content');
+        const renderToggle = document.getElementById('renderToggle');
+        
+        // Write HTML content to iframe
+        const frameDoc = htmlFrame.contentDocument || htmlFrame.contentWindow.document;
+        frameDoc.open();
+        frameDoc.write(`{{ content|safe|replace('"', '\\"') }}`);
+        frameDoc.close();
+        
+        // Toggle between rendered and raw HTML
+        renderToggle.addEventListener('change', function() {
+            if (this.checked) {
+                htmlRender.style.display = 'block';
+                rawContent.style.display = 'none';
+            } else {
+                htmlRender.style.display = 'none';
+                rawContent.style.display = 'block';
+            }
         });
-    </script>
-</body>
-</html>
+    });
+</script>
+{% endblock %}

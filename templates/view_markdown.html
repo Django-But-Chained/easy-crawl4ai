@@ -1,80 +1,70 @@
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>View Markdown - Easy Crawl4AI</title>
-    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5.1.0/github-markdown-dark.css">
-    <style>
-        body {
-            padding-top: 2rem;
-            padding-bottom: 4rem;
-        }
-        .markdown-body {
-            box-sizing: border-box;
-            min-width: 200px;
-            max-width: 980px;
-            margin: 0 auto;
-            padding: 45px;
-        }
-        @media (max-width: 767px) {
-            .markdown-body {
-                padding: 15px;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header class="mb-4">
-            <h1>View Markdown File</h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="/">Home</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">{{ filename }}</li>
-                </ol>
-            </nav>
-            
-            <div class="btn-toolbar mb-3" role="toolbar">
-                <div class="btn-group me-2" role="group">
-                    <a href="{{ url_for('download_file', filename=filename) }}" class="btn btn-outline-info">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
-                            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
-                            <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
-                        </svg>
-                        Download
-                    </a>
-                    <a href="/" class="btn btn-outline-primary">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-house" viewBox="0 0 16 16">
-                            <path d="M8.707 1.5a1 1 0 0 0-1.414 0L.646 8.146a.5.5 0 0 0 .708.708L8 2.207l6.646 6.647a.5.5 0 0 0 .708-.708L13 5.793V2.5a.5.5 0 0 0-.5-.5h-2a.5.5 0 0 0-.5.5v1.293L8.707 1.5Z"/>
-                            <path d="m8 3.293 6 6V13.5a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 13.5V9.293l6-6Z"/>
-                        </svg>
-                        Home
-                    </a>
-                </div>
-            </div>
-        </header>
+{% extends "base.html" %}
 
-        <div class="card">
-            <div class="card-header">
-                <h5 class="card-title mb-0">{{ filename }}</h5>
-            </div>
-            <div class="card-body p-0">
-                <div class="markdown-body" id="markdown-content">
-                    {{ content|safe }}
-                </div>
-            </div>
+{% block title %}View Markdown - {{ filename }}{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@5.1.0/github-markdown-dark.min.css">
+<script src="https://cdn.jsdelivr.net/npm/marked@4.0.0/marked.min.js"></script>
+<style>
+    .markdown-body {
+        box-sizing: border-box;
+        min-width: 200px;
+        max-width: 980px;
+        margin: 0 auto;
+        padding: 45px;
+    }
+    @media (max-width: 767px) {
+        .markdown-body {
+            padding: 15px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>{{ filename }}</h1>
+    <div>
+        <a href="{{ url_for('download_file', filename=filename) }}" class="btn btn-primary">Download</a>
+        <a href="javascript:history.back()" class="btn btn-secondary">Back</a>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="card-title mb-0">Markdown Content</h5>
+        <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="renderToggle" checked>
+            <label class="form-check-label" for="renderToggle">Render Markdown</label>
         </div>
     </div>
+    <div class="card-body p-0">
+        <div id="markdown-content" class="markdown-body"></div>
+        <pre id="raw-content" class="p-3" style="display: none;">{{ content }}</pre>
+    </div>
+</div>
+{% endblock %}
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const content = document.getElementById('markdown-content').innerText;
-            document.getElementById('markdown-content').innerHTML = marked.parse(content);
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const markdownContent = document.getElementById('markdown-content');
+        const rawContent = document.getElementById('raw-content');
+        const renderToggle = document.getElementById('renderToggle');
+        
+        // Render markdown initially
+        markdownContent.innerHTML = marked.parse('{{ content|safe|replace("'", "\\'")  }}');
+        
+        // Toggle between rendered and raw markdown
+        renderToggle.addEventListener('change', function() {
+            if (this.checked) {
+                markdownContent.style.display = 'block';
+                rawContent.style.display = 'none';
+            } else {
+                markdownContent.style.display = 'none';
+                rawContent.style.display = 'block';
+            }
         });
-    </script>
-</body>
-</html>
+    });
+</script>
+{% endblock %}

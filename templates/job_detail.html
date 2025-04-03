@@ -1,281 +1,214 @@
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Job Details - Easy Crawl4AI</title>
-    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
-    <style>
-        body {
-            padding-top: 2rem;
-            padding-bottom: 4rem;
-        }
-        .status-badge {
-            font-size: 0.85rem;
-        }
-        .status-pending {
-            background-color: var(--bs-warning);
-        }
-        .status-running {
-            background-color: var(--bs-info);
-        }
-        .status-completed {
-            background-color: var(--bs-success);
-        }
-        .status-failed {
-            background-color: var(--bs-danger);
-        }
-        .detail-container {
-            background-color: var(--bs-dark);
-            border-radius: 0.375rem;
-            padding: 1rem;
-            margin-bottom: 1rem;
-        }
-        .detail-label {
-            font-weight: bold;
-            color: var(--bs-info);
-        }
-        .file-path {
-            word-break: break-all;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header class="mb-4">
-            <h1>Job Details</h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="/">Home</a></li>
-                    <li class="breadcrumb-item"><a href="{{ url_for('job_list') }}">Jobs</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Job #{{ job.id }}</li>
-                </ol>
-            </nav>
-        </header>
+{% extends "base.html" %}
 
-        <!-- Flash Messages -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+{% block title %}Job Details - Easy Crawl4AI{% endblock %}
 
-        <!-- Job Overview -->
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>
+            Job #{{ job.id }}
+            <span class="badge {% if job.status == 'completed' %}bg-success{% elif job.status == 'failed' %}bg-danger{% elif job.status == 'running' %}bg-primary{% else %}bg-secondary{% endif %}">
+                {{ job.status }}
+            </span>
+        </h1>
+        <p class="lead">{{ job.crawl_type|title }} crawler job details</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
         <div class="card mb-4">
             <div class="card-header">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Job #{{ job.id }} - 
-                        {% if job.crawl_type == 'single' %}
-                            Single URL Crawl
-                        {% elif job.crawl_type == 'multiple' %}
-                            Multiple URLs Crawl
-                        {% elif job.crawl_type == 'deep' %}
-                            Deep Crawl
-                        {% elif job.crawl_type == 'files' %}
-                            File Download
-                        {% endif %}
-                    </h5>
-                    <span class="badge status-badge status-{{ job.status }}">{{ job.status|upper }}</span>
-                </div>
+                <h5 class="card-title mb-0">Job Details</h5>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="detail-container">
-                            <h6>Job Details</h6>
-                            <div class="mb-2">
-                                <span class="detail-label">Status:</span>
-                                <span class="badge status-badge status-{{ job.status }}">{{ job.status|upper }}</span>
-                            </div>
-                            <div class="mb-2">
-                                <span class="detail-label">Created:</span>
-                                {{ job.created_at.strftime('%Y-%m-%d %H:%M:%S') }}
-                            </div>
-                            {% if job.completed_at %}
-                            <div class="mb-2">
-                                <span class="detail-label">Completed:</span>
-                                {{ job.completed_at.strftime('%Y-%m-%d %H:%M:%S') }}
-                            </div>
-                            {% endif %}
-                            <div class="mb-2">
-                                <span class="detail-label">Output Directory:</span>
-                                {{ job.output_dir }}
-                            </div>
-                            <div class="mb-2">
-                                <span class="detail-label">Format:</span>
-                                {{ job.format }}
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="detail-container">
-                            <h6>Crawl Configuration</h6>
-                            {% if job.crawl_type == 'single' or job.crawl_type == 'deep' or job.crawl_type == 'files' %}
-                            <div class="mb-2">
-                                <span class="detail-label">URL:</span>
-                                <a href="{{ job.url }}" target="_blank">{{ job.url }}</a>
-                            </div>
-                            {% endif %}
-                            
-                            {% if job.crawl_type == 'multiple' and job.urls %}
-                            <div class="mb-2">
-                                <span class="detail-label">URLs:</span>
-                                <a href="#urlModal" data-bs-toggle="modal" data-bs-target="#urlModal">{{ job.urls|length }} URLs</a>
-                            </div>
-                            {% endif %}
-                            
-                            <div class="mb-2">
-                                <span class="detail-label">Browser Mode:</span>
-                                {{ 'Enabled' if job.use_browser else 'Disabled' }}
-                            </div>
-                            
-                            <div class="mb-2">
-                                <span class="detail-label">Include Images:</span>
-                                {{ 'Yes' if job.include_images else 'No' }}
-                            </div>
-                            
-                            <div class="mb-2">
-                                <span class="detail-label">Include Links:</span>
-                                {{ 'Yes' if job.include_links else 'No' }}
-                            </div>
-                            
-                            {% if job.crawl_type == 'deep' %}
-                            <div class="mb-2">
-                                <span class="detail-label">Max Depth:</span>
-                                {{ job.max_depth }}
-                            </div>
-                            
-                            <div class="mb-2">
-                                <span class="detail-label">Max Pages:</span>
-                                {{ job.max_pages }}
-                            </div>
-                            
-                            <div class="mb-2">
-                                <span class="detail-label">Stay Within Domain:</span>
-                                {{ 'Yes' if job.stay_within_domain else 'No' }}
-                            </div>
-                            {% endif %}
-                            
-                            {% if job.crawl_type == 'files' %}
-                            <div class="mb-2">
-                                <span class="detail-label">File Types:</span>
-                                {{ job.file_types }}
-                            </div>
-                            
-                            <div class="mb-2">
-                                <span class="detail-label">Max File Size:</span>
-                                {{ job.max_size }} MB
-                            </div>
-                            
-                            <div class="mb-2">
-                                <span class="detail-label">Max Files:</span>
-                                {{ job.max_files }}
-                            </div>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                
-                {% if job.error_message %}
-                <div class="alert alert-danger mt-3">
-                    <h6 class="alert-heading">Error Details</h6>
-                    <p>{{ job.error_message }}</p>
-                </div>
-                {% endif %}
-                
-                <div class="d-flex justify-content-between mt-3">
-                    <a href="{{ url_for('job_list') }}" class="btn btn-outline-secondary">Back to Jobs</a>
-                    <a href="/" class="btn btn-primary">Start a New Crawl</a>
-                </div>
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <th style="width: 30%">Type:</th>
+                            <td>{{ job.crawl_type|title }}</td>
+                        </tr>
+                        <tr>
+                            <th>URL:</th>
+                            <td>
+                                {% if job.crawl_type == 'multiple' %}
+                                    <ul class="mb-0">
+                                    {% for url in job.urls %}
+                                        <li><small>{{ url }}</small></li>
+                                    {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    {{ job.url }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Status:</th>
+                            <td>{{ job.status }}</td>
+                        </tr>
+                        <tr>
+                            <th>Created:</th>
+                            <td>{{ job.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                        </tr>
+                        <tr>
+                            <th>Completed:</th>
+                            <td>
+                                {% if job.completed_at %}
+                                    {{ job.completed_at.strftime('%Y-%m-%d %H:%M') }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Output Directory:</th>
+                            <td>{{ job.output_dir }}</td>
+                        </tr>
+                        <tr>
+                            <th>Output Format:</th>
+                            <td>{{ job.format }}</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Crawl Options</h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tbody>
+                        <tr>
+                            <th style="width: 30%">Browser Rendering:</th>
+                            <td>
+                                {% if job.use_browser %}
+                                    <span class="badge bg-success">Enabled</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Disabled</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Include Images:</th>
+                            <td>
+                                {% if job.include_images %}
+                                    <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">No</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Include Links:</th>
+                            <td>
+                                {% if job.include_links %}
+                                    <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">No</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        
+                        {% if job.crawl_type == 'deep' %}
+                        <tr>
+                            <th>Max Depth:</th>
+                            <td>{{ job.max_depth }}</td>
+                        </tr>
+                        <tr>
+                            <th>Max Pages:</th>
+                            <td>{{ job.max_pages }}</td>
+                        </tr>
+                        <tr>
+                            <th>Stay Within Domain:</th>
+                            <td>
+                                {% if job.stay_within_domain %}
+                                    <span class="badge bg-success">Yes</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">No</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                        
+                        {% if job.crawl_type == 'files' %}
+                        <tr>
+                            <th>File Types:</th>
+                            <td>{{ job.file_types }}</td>
+                        </tr>
+                        <tr>
+                            <th>Max Size:</th>
+                            <td>{{ job.max_size }} MB</td>
+                        </tr>
+                        <tr>
+                            <th>Max Files:</th>
+                            <td>{{ job.max_files }}</td>
+                        </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
             </div>
         </div>
         
-        <!-- Results Section -->
-        {% if results %}
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Results ({{ results|length }})</h5>
+        {% if job.status == 'failed' and job.error_message %}
+        <div class="card mb-4 border-danger">
+            <div class="card-header bg-danger text-white">
+                <h5 class="card-title mb-0">Error Details</h5>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>URL</th>
-                                <th>Title</th>
-                                <th>Word Count</th>
-                                <th>Links</th>
-                                <th>Images</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for result in results %}
-                            <tr>
-                                <td>
-                                    <a href="{{ result.url }}" target="_blank" class="text-truncate d-inline-block" style="max-width: 200px;">{{ result.url }}</a>
-                                </td>
-                                <td>{{ result.title|default('No Title')|truncate(30) }}</td>
-                                <td>{{ result.word_count|default(0) }}</td>
-                                <td>{{ result.link_count|default(0) }}</td>
-                                <td>{{ result.image_count|default(0) }}</td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        {% set filename = result.output_file.split('/')[-1] %}
-                                        <a href="{{ url_for('view_file', filename=filename) }}" class="btn btn-outline-primary">View</a>
-                                        <a href="{{ url_for('download_file', filename=filename) }}" class="btn btn-outline-info">Download</a>
-                                    </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                <pre class="text-danger mb-0">{{ job.error_message }}</pre>
             </div>
         </div>
         {% endif %}
     </div>
+</div>
 
-    <!-- URL Modal for Multiple URLs -->
-    {% if job.crawl_type == 'multiple' and job.urls %}
-    <div class="modal fade" id="urlModal" tabindex="-1" aria-labelledby="urlModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="urlModalLabel">URLs List</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="list-group">
-                        {% for url in job.urls %}
-                        <a href="{{ url }}" target="_blank" class="list-group-item list-group-item-action">{{ url }}</a>
-                        {% endfor %}
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
+{% if results %}
+<h2 class="mb-3">Results ({{ results|length }})</h2>
 
-    <footer class="bg-dark text-light py-4 mt-5">
-        <div class="container text-center">
-            <p>
-                Easy Crawl4AI - A user-friendly wrapper for <a href="https://github.com/unclecode/crawl4ai" target="_blank" class="text-info">crawl4ai</a>
-            </p>
-            <p class="small text-muted">
-                This tool helps extract content from websites in a simple, non-technical way.
-            </p>
-        </div>
-    </footer>
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>URL</th>
+                <th>Title</th>
+                <th>Content</th>
+                <th>Links</th>
+                <th>Images</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for result in results %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td><small>{{ result.url|truncate(30) }}</small></td>
+                <td>{{ result.title|default('No Title', true)|truncate(30) }}</td>
+                <td>{{ result.word_count|default(0) }} words</td>
+                <td>{{ result.link_count|default(0) }}</td>
+                <td>{{ result.image_count|default(0) }}</td>
+                <td>
+                    {% set filename = result.output_file.split('/')[-1] %}
+                    <a href="{{ url_for('view_file', filename=filename) }}" class="btn btn-sm btn-primary" target="_blank">View</a>
+                    <a href="{{ url_for('download_file', filename=filename) }}" class="btn btn-sm btn-secondary">Download</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% elif job.status == 'completed' %}
+<div class="alert alert-info">
+    No detailed results available for this job. Check the output directory for files.
+</div>
+{% endif %}
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<div class="mt-4">
+    <a href="{{ url_for('job_list') }}" class="btn btn-secondary">Back to Jobs</a>
+    <a href="/" class="btn btn-primary">New Crawl</a>
+</div>
+{% endblock %}

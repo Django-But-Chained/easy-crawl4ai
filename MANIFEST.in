@@ -1,0 +1,6 @@
+include README.md
+include LICENSE
+include easy_crawl4ai/templates/*.html
+include easy_crawl4ai/static/css/*.css
+include easy_crawl4ai/static/js/*.js
+recursive-include templates *.html

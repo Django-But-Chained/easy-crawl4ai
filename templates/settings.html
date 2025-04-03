@@ -1,246 +1,171 @@
-<!DOCTYPE html>
-<html lang="en" data-bs-theme="dark">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Settings - Easy Crawl4AI</title>
-    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
-    <style>
-        body {
-            padding-top: 2rem;
-            padding-bottom: 4rem;
-        }
-        .settings-card {
-            margin-bottom: 1.5rem;
-        }
-        .settings-section {
-            margin-bottom: 2rem;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header class="mb-4">
-            <h1>Application Settings</h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="/">Home</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">Settings</li>
-                </ol>
-            </nav>
-        </header>
+{% extends "base.html" %}
 
-        <!-- Flash Messages -->
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+{% block title %}Settings - Easy Crawl4AI{% endblock %}
 
-        <form method="POST" action="{{ url_for('settings') }}">
-            <div class="row">
-                <div class="col-lg-8 offset-lg-2">
-                    <div class="card settings-card">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">General Settings</h5>
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Settings</h1>
+        <p class="lead">Configure application settings and install optional features.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Application Settings</h5>
+            </div>
+            <div class="card-body">
+                <form action="{{ url_for('settings') }}" method="post">
+                    <div class="mb-3">
+                        <label for="default_output_dir" class="form-label">Default Output Directory</label>
+                        <input type="text" class="form-control" id="default_output_dir" name="setting_default_output_dir" 
+                            value="{{ settings|selectattr('key', 'equalto', 'default_output_dir')|map(attribute='value')|first|default('./results') }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="default_format" class="form-label">Default Output Format</label>
+                        <select class="form-select" id="default_format" name="setting_default_format">
+                            <option value="markdown" {% if settings|selectattr('key', 'equalto', 'default_format')|map(attribute='value')|first == 'markdown' %}selected{% endif %}>Markdown</option>
+                            <option value="html" {% if settings|selectattr('key', 'equalto', 'default_format')|map(attribute='value')|first == 'html' %}selected{% endif %}>HTML</option>
+                            <option value="text" {% if settings|selectattr('key', 'equalto', 'default_format')|map(attribute='value')|first == 'text' %}selected{% endif %}>Text</option>
+                            <option value="json" {% if settings|selectattr('key', 'equalto', 'default_format')|map(attribute='value')|first == 'json' %}selected{% endif %}>JSON</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="max_concurrent_jobs" class="form-label">Max Concurrent Jobs</label>
+                        <input type="number" class="form-control" id="max_concurrent_jobs" name="setting_max_concurrent_jobs" 
+                            value="{{ settings|selectattr('key', 'equalto', 'max_concurrent_jobs')|map(attribute='value')|first|default('5') }}" min="1" max="10">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="default_max_depth" class="form-label">Default Max Depth for Deep Crawling</label>
+                        <input type="number" class="form-control" id="default_max_depth" name="setting_default_max_depth" 
+                            value="{{ settings|selectattr('key', 'equalto', 'default_max_depth')|map(attribute='value')|first|default('3') }}" min="1" max="5">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="default_max_pages" class="form-label">Default Max Pages for Deep Crawling</label>
+                        <input type="number" class="form-control" id="default_max_pages" name="setting_default_max_pages" 
+                            value="{{ settings|selectattr('key', 'equalto', 'default_max_pages')|map(attribute='value')|first|default('20') }}" min="1" max="100">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="default_file_types" class="form-label">Default File Types for Download</label>
+                        <input type="text" class="form-control" id="default_file_types" name="setting_default_file_types" 
+                            value="{{ settings|selectattr('key', 'equalto', 'default_file_types')|map(attribute='value')|first|default('pdf,doc,docx,xls,xlsx,ppt,pptx') }}">
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="enable_browser_crawling" name="setting_enable_browser_crawling" 
+                            {% if settings|selectattr('key', 'equalto', 'enable_browser_crawling')|map(attribute='value')|first == 'true' %}checked{% endif %}>
+                        <label class="form-check-label" for="enable_browser_crawling">Enable Browser-Based Crawling by Default</label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Save Settings</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Optional Features</h5>
+            </div>
+            <div class="card-body">
+                <p>Some features require additional dependencies to be installed. Check which features you want to use.</p>
+                
+                <div class="list-group mb-3" id="features-list">
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">Browser-based Crawling</h5>
+                            <span class="feature-status" data-feature="browser">Checking...</span>
                         </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label for="setting_default_output_dir" class="form-label">Default Output Directory</label>
-                                <input type="text" class="form-control" id="setting_default_output_dir" name="setting_default_output_dir" 
-                                    value="{{ settings|selectattr('key', 'equalto', 'default_output_dir')|map(attribute='value')|first|default('./results') }}">
-                                <div class="form-text">Where to save crawled content by default</div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="setting_default_format" class="form-label">Default Output Format</label>
-                                <select class="form-select" id="setting_default_format" name="setting_default_format">
-                                    {% set default_format = settings|selectattr('key', 'equalto', 'default_format')|map(attribute='value')|first|default('markdown') %}
-                                    <option value="markdown" {% if default_format == 'markdown' %}selected{% endif %}>Markdown</option>
-                                    <option value="html" {% if default_format == 'html' %}selected{% endif %}>HTML</option>
-                                    <option value="text" {% if default_format == 'text' %}selected{% endif %}>Plain Text</option>
-                                    <option value="json" {% if default_format == 'json' %}selected{% endif %}>JSON</option>
-                                </select>
-                                <div class="form-text">Default format for saving crawled content</div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="setting_max_concurrent_jobs" class="form-label">Maximum Concurrent Jobs</label>
-                                <input type="number" class="form-control" id="setting_max_concurrent_jobs" name="setting_max_concurrent_jobs" 
-                                    value="{{ settings|selectattr('key', 'equalto', 'max_concurrent_jobs')|map(attribute='value')|first|default('5') }}" min="1" max="10">
-                                <div class="form-text">Maximum number of crawl jobs that can run simultaneously</div>
-                            </div>
-                            
-                            <div class="form-check form-switch mb-3">
-                                {% set browser_enabled = settings|selectattr('key', 'equalto', 'enable_browser_crawling')|map(attribute='value')|first|default('true') %}
-                                <input class="form-check-input" type="checkbox" id="setting_enable_browser_crawling" name="setting_enable_browser_crawling" 
-                                    value="true" {% if browser_enabled == 'true' %}checked{% endif %}>
-                                <label class="form-check-label" for="setting_enable_browser_crawling">Enable Browser-based Crawling</label>
-                                <div class="form-text">Use browser-based crawling for JavaScript-heavy sites (slower but more accurate)</div>
-                            </div>
+                        <p class="mb-1">Renders JavaScript-heavy websites using a headless browser. Required for accurate crawling of many modern websites.</p>
+                        <small>Installs: playwright</small>
+                        <div class="mt-2 feature-action" data-feature="browser">
+                            <a href="{{ url_for('install_feature', feature='browser') }}" class="btn btn-sm btn-primary">Install</a>
                         </div>
                     </div>
                     
-                    <div class="card settings-card">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">Deep Crawl Settings</h5>
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">PDF Processing</h5>
+                            <span class="feature-status" data-feature="pdf">Checking...</span>
                         </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label for="setting_default_max_depth" class="form-label">Default Maximum Depth</label>
-                                <input type="number" class="form-control" id="setting_default_max_depth" name="setting_default_max_depth" 
-                                    value="{{ settings|selectattr('key', 'equalto', 'default_max_depth')|map(attribute='value')|first|default('3') }}" min="1" max="10">
-                                <div class="form-text">Default maximum depth for deep crawling</div>
-                            </div>
-                            
-                            <div class="mb-3">
-                                <label for="setting_default_max_pages" class="form-label">Default Maximum Pages</label>
-                                <input type="number" class="form-control" id="setting_default_max_pages" name="setting_default_max_pages" 
-                                    value="{{ settings|selectattr('key', 'equalto', 'default_max_pages')|map(attribute='value')|first|default('20') }}" min="1" max="100">
-                                <div class="form-text">Default maximum number of pages to crawl in deep crawling</div>
-                            </div>
+                        <p class="mb-1">Advanced PDF handling and content extraction. Improves quality of text extracted from PDF files.</p>
+                        <small>Installs: PyPDF2</small>
+                        <div class="mt-2 feature-action" data-feature="pdf">
+                            <a href="{{ url_for('install_feature', feature='pdf') }}" class="btn btn-sm btn-primary">Install</a>
                         </div>
                     </div>
                     
-                    <div class="card settings-card">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">File Download Settings</h5>
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">LLM Integration</h5>
+                            <span class="feature-status" data-feature="llm">Checking...</span>
                         </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label for="setting_default_file_types" class="form-label">Default File Types</label>
-                                <input type="text" class="form-control" id="setting_default_file_types" name="setting_default_file_types" 
-                                    value="{{ settings|selectattr('key', 'equalto', 'default_file_types')|map(attribute='value')|first|default('pdf,doc,docx,xls,xlsx,ppt,pptx') }}">
-                                <div class="form-text">Default file types to search for in file download mode (comma-separated)</div>
-                            </div>
+                        <p class="mb-1">Process crawled content using Large Language Models like GPT. Useful for summarization and analysis.</p>
+                        <small>Installs: openai, langchain</small>
+                        <div class="mt-2 feature-action" data-feature="llm">
+                            <a href="{{ url_for('install_feature', feature='llm') }}" class="btn btn-sm btn-primary">Install</a>
                         </div>
-                    </div>
-                    
-                    <div class="card settings-card">
-                        <div class="card-header">
-                            <h5 class="card-title mb-0">Optional Features</h5>
-                        </div>
-                        <div class="card-body">
-                            <p class="mb-3">
-                                crawl4ai offers several optional features that can be installed separately. 
-                                These features require additional dependencies.
-                            </p>
-                            
-                            <div class="list-group mb-3">
-                                <div class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1">PDF Processing</h6>
-                                            <p class="mb-1 text-muted small">Extract text from PDF files</p>
-                                            <p class="mb-0 small">
-                                                <code>pip install "crawl4ai[pdf]"</code> or 
-                                                <code>pip install PyPDF2</code>
-                                            </p>
-                                        </div>
-                                        <div>
-                                            {% if settings|selectattr('key', 'equalto', 'feature_pdf_installed')|map(attribute='value')|first|default('false') == 'true' %}
-                                                <span class="badge bg-success">Installed</span>
-                                            {% else %}
-                                                <a href="{{ url_for('install_feature', feature='pdf') }}" class="btn btn-sm btn-outline-primary">Install</a>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1">Browser-Based Crawling</h6>
-                                            <p class="mb-1 text-muted small">Render JavaScript-heavy sites and extract dynamic content</p>
-                                            <p class="mb-0 small">
-                                                <code>pip install "crawl4ai[browser]"</code> or 
-                                                <code>pip install playwright</code> then
-                                                <code>playwright install</code>
-                                            </p>
-                                        </div>
-                                        <div>
-                                            {% if settings|selectattr('key', 'equalto', 'feature_browser_installed')|map(attribute='value')|first|default('false') == 'true' %}
-                                                <span class="badge bg-success">Installed</span>
-                                            {% else %}
-                                                <a href="{{ url_for('install_feature', feature='browser') }}" class="btn btn-sm btn-outline-primary">Install</a>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1">LLM Integration</h6>
-                                            <p class="mb-1 text-muted small">Process content with language models for better extraction</p>
-                                            <p class="mb-0 small">
-                                                <code>pip install "crawl4ai[llm]"</code> or 
-                                                <code>pip install openai langchain</code>
-                                            </p>
-                                        </div>
-                                        <div>
-                                            {% if settings|selectattr('key', 'equalto', 'feature_llm_installed')|map(attribute='value')|first|default('false') == 'true' %}
-                                                <span class="badge bg-success">Installed</span>
-                                            {% else %}
-                                                <a href="{{ url_for('install_feature', feature='llm') }}" class="btn btn-sm btn-outline-primary">Install</a>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="list-group-item">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h6 class="mb-1">All Features</h6>
-                                            <p class="mb-1 text-muted small">Install all optional dependencies</p>
-                                            <p class="mb-0 small">
-                                                <code>pip install "crawl4ai[all]"</code>
-                                            </p>
-                                        </div>
-                                        <div>
-                                            {% if (settings|selectattr('key', 'equalto', 'feature_pdf_installed')|map(attribute='value')|first|default('false') == 'true') and
-                                                  (settings|selectattr('key', 'equalto', 'feature_browser_installed')|map(attribute='value')|first|default('false') == 'true') and
-                                                  (settings|selectattr('key', 'equalto', 'feature_llm_installed')|map(attribute='value')|first|default('false') == 'true') %}
-                                                <span class="badge bg-success">All Installed</span>
-                                            {% else %}
-                                                <a href="{{ url_for('install_feature', feature='all') }}" class="btn btn-sm btn-outline-primary">Install All</a>
-                                            {% endif %}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="alert alert-info">
-                                <p class="mb-0">Note: Installation requires a server restart. This may take a few moments.</p>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="d-grid gap-2">
-                        <button type="submit" class="btn btn-success">Save Settings</button>
-                        <a href="/" class="btn btn-outline-secondary">Back to Home</a>
                     </div>
                 </div>
+                
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('install_feature', feature='all') }}" class="btn btn-success">Install All Features</a>
+                </div>
             </div>
-        </form>
-    </div>
-
-    <footer class="bg-dark text-light py-4 mt-5">
-        <div class="container text-center">
-            <p>
-                Easy Crawl4AI - A user-friendly wrapper for <a href="https://github.com/unclecode/crawl4ai" target="_blank" class="text-info">crawl4ai</a>
-            </p>
-            <p class="small text-muted">
-                This tool helps extract content from websites in a simple, non-technical way.
-            </p>
         </div>
-    </footer>
+        
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">About</h5>
+            </div>
+            <div class="card-body">
+                <p>Easy Crawl4AI - A user-friendly wrapper for the crawl4ai web crawler library.</p>
+                <p>This tool makes it easy to extract content from websites without any technical knowledge.</p>
+                <p>For detailed usage information, see the documentation.</p>
+                <p class="mb-0"><small class="text-muted">Version: 1.0.0</small></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Check which features are installed
+        fetch('/check-features')
+            .then(response => response.json())
+            .then(data => {
+                // Update feature status indicators
+                for (const [feature, info] of Object.entries(data)) {
+                    const statusElem = document.querySelector(`.feature-status[data-feature="${feature}"]`);
+                    const actionElem = document.querySelector(`.feature-action[data-feature="${feature}"]`);
+                    
+                    if (statusElem) {
+                        if (info.installed) {
+                            statusElem.textContent = 'Installed';
+                            statusElem.classList.add('badge', 'bg-success');
+                            if (actionElem) {
+                                actionElem.innerHTML = '<span class="text-success">✓ Already installed</span>';
+                            }
+                        } else {
+                            statusElem.textContent = 'Not Installed';
+                            statusElem.classList.add('badge', 'bg-secondary');
+                        }
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error checking features:', error);
+            });
+    });
+</script>
+{% endblock %}
