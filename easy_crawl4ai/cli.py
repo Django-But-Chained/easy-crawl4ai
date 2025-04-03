@@ -539,8 +539,7 @@ def info():
         "• Deep crawling - Follow links to explore websites thoroughly\n"
         "• File downloading - Find and download documents from websites\n"
         "• Multiple output formats - Save as Markdown, HTML, Text, or JSON\n"
-        "• Browser-based crawling - Render JavaScript-heavy sites accurately\n"
-        "• Content analysis - AI-powered insights and readability metrics",
+        "• Browser-based crawling - Render JavaScript-heavy sites accurately",
         title="Features",
         border_style="cyan",
     )
@@ -565,7 +564,6 @@ def info():
         "• Use [cyan]--browser[/cyan] for JavaScript-heavy sites (requires playwright)\n"
         "• Use [cyan]--format[/cyan] to specify the output format (markdown, html, text, json)\n"
         "• For deep crawling, use [cyan]-d/--max-depth[/cyan] to control how many links to follow\n"
-        "• For content analysis, use [cyan]analyze</cyan> command with [cyan]--level=full[/cyan] for AI insights\n"
         "• Use [cyan]--help[/cyan] with any command to see all available options\n\n"
         "[bold]For a web interface:[/bold] Run [cyan]easy_crawl4ai_web[/cyan] from command line",
         title="Usage Tips",
@@ -577,132 +575,6 @@ def info():
     console.print(feature_panel)
     console.print(dependencies_panel)
     console.print(tips_panel)
-
-
-@cli.command()
-@click.argument('input_file', type=click.Path(exists=True))
-@click.option('-o', '--output-file', help='Output file to save analysis results (default: input_file_analysis.json)')
-@click.option('--api-key', help='OpenAI API key for AI-powered analysis')
-@click.option('--level', type=click.Choice(['basic', 'full']), default='basic', 
-              help='Analysis level: basic (metrics only) or full (includes AI analysis)')
-def analyze(input_file, output_file, api_key, level):
-    """
-    Analyze content from a crawled file.
-    
-    This command uses text analysis and AI to generate insights about the content
-    of a previously crawled file. It can provide readability metrics, content structure
-    analysis, and AI-powered content quality assessment.
-    
-    Example:
-        easy_crawl4ai analyze ./results/example_com.md --level=full
-    """
-    # Check if output file is specified, otherwise create default
-    if not output_file:
-        input_path = Path(input_file)
-        output_file = f"{input_path.stem}_analysis.json"
-    
-    console.print(Panel(f"[bold blue]Content Analysis[/bold blue]", border_style="blue"))
-    console.print(f"Analyzing: [cyan]{input_file}[/cyan]")
-    console.print(f"Analysis level: [cyan]{level}[/cyan]")
-    
-    try:
-        # Read the input file
-        with open(input_file, 'r', encoding='utf-8') as f:
-            content = f.read()
-        
-        # Try to determine the format from file extension
-        file_format = Path(input_file).suffix.lstrip('.')
-        if file_format == 'md':
-            file_format = 'markdown'
-        
-        # Create a content dictionary similar to what the crawler would return
-        content_data = {
-            'text': content,
-            'title': Path(input_file).stem,
-            'format': file_format,
-            'url': f"file://{os.path.abspath(input_file)}"
-        }
-        
-        # Import the content analyzer
-        try:
-            from content_analyzer import analyze_content_quality
-            
-            # Set API key in environment if provided
-            if api_key:
-                os.environ['OPENAI_API_KEY'] = api_key
-            
-            # Start analysis with progress indication
-            with console.status("[bold green]Analyzing content...") as status:
-                # Perform the analysis
-                analysis_results = analyze_content_quality(content_data, api_key)
-                
-                # If level is basic, remove AI analysis to save tokens
-                if level == 'basic' and 'ai_analysis' in analysis_results:
-                    del analysis_results['ai_analysis']
-            
-            # Save results to output file
-            with open(output_file, 'w', encoding='utf-8') as f:
-                json.dump(analysis_results, f, indent=2)
-            
-            console.print(f"[bold green]Analysis complete![/bold green] Results saved to: [cyan]{output_file}[/cyan]")
-            
-            # Display summary of results
-            console.print("\n[bold]Analysis Summary:[/bold]")
-            
-            # Basic metrics
-            if 'basic_metrics' in analysis_results:
-                metrics = analysis_results['basic_metrics']
-                basic_table = Table(title="Basic Metrics", box=box.ROUNDED)
-                basic_table.add_column("Metric", style="cyan")
-                basic_table.add_column("Value", style="green")
-                
-                basic_table.add_row("Word Count", str(metrics.get('word_count', 'N/A')))
-                basic_table.add_row("Sentence Count", str(metrics.get('sentence_count', 'N/A')))
-                basic_table.add_row("Avg. Word Length", f"{metrics.get('avg_word_length', 'N/A')} chars")
-                basic_table.add_row("Avg. Sentence Length", f"{metrics.get('avg_sentence_length', 'N/A')} words")
-                basic_table.add_row("Unique Words", f"{metrics.get('unique_words', 'N/A')} ({metrics.get('unique_word_ratio', 0) * 100:.1f}%)")
-                
-                console.print(basic_table)
-            
-            # Readability
-            if 'readability' in analysis_results:
-                readability = analysis_results['readability']
-                read_table = Table(title="Readability", box=box.ROUNDED)
-                read_table.add_column("Metric", style="cyan")
-                read_table.add_column("Value", style="green")
-                
-                read_table.add_row("Assessment", readability.get('readability_assessment', 'N/A'))
-                read_table.add_row("Flesch Reading Ease", str(readability.get('flesch_reading_ease', 'N/A')))
-                read_table.add_row("Flesch-Kincaid Grade", str(readability.get('flesch_kincaid_grade', 'N/A')))
-                
-                console.print(read_table)
-            
-            # AI Analysis
-            if level == 'full' and 'ai_analysis' in analysis_results and analysis_results['ai_analysis'].get('status') == 'success':
-                ai_insights = analysis_results['ai_analysis']['insights']
-                
-                ai_table = Table(title="AI Content Analysis", box=box.ROUNDED)
-                ai_table.add_column("Aspect", style="cyan")
-                ai_table.add_column("Assessment", style="green")
-                
-                ai_table.add_row("Content Quality", f"{ai_insights.get('quality_score', 'N/A')}/10")
-                ai_table.add_row("Objectivity", f"{ai_insights.get('objectivity_score', 'N/A')}/10")
-                ai_table.add_row("Sentiment", ai_insights.get('sentiment', 'N/A'))
-                ai_table.add_row("Writing Style", ai_insights.get('writing_style', 'N/A'))
-                
-                console.print(ai_table)
-                
-                # Show summary
-                if 'summary' in ai_insights:
-                    console.print(Panel(ai_insights['summary'], title="Content Summary", border_style="green"))
-            
-        except ImportError:
-            console.print("[bold red]Error:[/bold red] content_analyzer module not found. Please check your installation.")
-            sys.exit(1)
-            
-    except Exception as e:
-        console.print(f"[bold red]Error during analysis:[/bold red] {str(e)}")
-        sys.exit(1)
 
 
 if __name__ == "__main__":

@@ -7,7 +7,6 @@ import os
 import sys
 import json
 import logging
-import importlib.util
 from pathlib import Path
 from datetime import datetime
 from urllib.parse import urlparse
@@ -311,38 +310,6 @@ def run_crawl():
 def save_result_to_db(job_id, result, output_file):
     """Save a crawl result to the database"""
     try:
-        # Get content analysis settings
-        enable_content_analysis = Setting.query.filter_by(key='enable_content_analysis').first()
-        content_analysis_level = Setting.query.filter_by(key='content_analysis_default').first()
-        
-        # If we're performing content analysis, generate insights
-        content_insights = None
-        if enable_content_analysis and enable_content_analysis.value == 'true':
-            try:
-                # Import our content analyzer
-                from content_analyzer import analyze_content_quality
-                
-                # Get OpenAI API key from settings
-                api_key_setting = Setting.query.filter_by(key='openai_api_key').first()
-                api_key = api_key_setting.value if api_key_setting else None
-                
-                # Set environment variable for API key
-                if api_key:
-                    os.environ['OPENAI_API_KEY'] = api_key
-                
-                # Analyze content
-                logger.info(f"Performing content analysis for URL: {result.get('url', '')}")
-                content_insights = analyze_content_quality(result, api_key)
-                logger.info("Content analysis completed successfully")
-            except Exception as e:
-                logger.error(f"Error during content analysis: {str(e)}")
-                content_insights = {
-                    "error": True,
-                    "message": str(e),
-                    "timestamp": datetime.utcnow().isoformat()
-                }
-        
-        # Create database record
         db_result = CrawlResult(
             job_id=job_id,
             url=result.get('url', ''),
@@ -352,19 +319,14 @@ def save_result_to_db(job_id, result, output_file):
             word_count=len(result.get('text', '').split()),
             link_count=len(result.get('links', [])),
             image_count=len(result.get('images', [])),
-            content_insights=content_insights,
             created_at=datetime.utcnow()
         )
         db.session.add(db_result)
         db.session.commit()
-        
-        # Return the result ID for reference
-        return db_result.id
     except Exception as e:
         logger.error(f"Error saving result to database: {str(e)}")
         error_info = format_error_message(e)
         flash(f"Error saving results: {error_info['message']}", 'warning')
-        return None
 
 def save_result(result, output_dir, format_type, filename):
     """Save the crawl result to the specified directory with the given format."""
@@ -477,34 +439,8 @@ def settings():
         for key, value in request.form.items():
             if key.startswith('setting_'):
                 setting_key = key[8:]  # Remove 'setting_' prefix
-                
-                # Special handling for OpenAI API key
-                if setting_key == 'openai_api_key' and value:
-                    # Validate the API key (optional)
-                    try:
-                        # Store the API key in environment variable temporarily
-                        os.environ['OPENAI_API_KEY'] = value
-                        
-                        # Try to import and initialize OpenAI
-                        if importlib.util.find_spec('openai'):
-                            import openai
-                            from openai import OpenAI
-                            client = OpenAI(api_key=value)
-                            # Make a simple call to validate the key
-                            response = client.models.list()
-                            flash('OpenAI API key validated successfully', 'success')
-                        else:
-                            flash('OpenAI package not installed. API key will be saved but not validated.', 'warning')
-                    except Exception as e:
-                        flash(f'Error validating OpenAI API key: {str(e)}', 'error')
-                        logger.error(f"API key validation error: {str(e)}")
-                
-                # Save the setting
                 setting = Setting.query.filter_by(key=setting_key).first()
                 if setting:
-                    if setting_key == 'openai_api_key' and not value and setting.value:
-                        # If clearing the API key, confirm with the user
-                        flash('API key has been cleared.', 'info')
                     setting.value = value
                 else:
                     setting = Setting(key=setting_key, value=value)
@@ -516,13 +452,7 @@ def settings():
     
     # Get all settings
     all_settings = Setting.query.all()
-    
-    # Import check for content analysis
-    content_analysis_available = importlib.util.find_spec('openai') is not None
-    
-    return render_template('settings.html', 
-                          settings=all_settings, 
-                          content_analysis_available=content_analysis_available)
+    return render_template('settings.html', settings=all_settings)
 
 # Initialize default settings if they don't exist
 def init_default_settings():
@@ -534,10 +464,7 @@ def init_default_settings():
         'enable_browser_crawling': 'true',
         'default_max_depth': '3',
         'default_max_pages': '20',
-        'default_file_types': 'pdf,doc,docx,xls,xlsx,ppt,pptx',
-        'enable_content_analysis': 'true',
-        'openai_api_key': '',  # This will be set through the UI
-        'content_analysis_default': 'basic'  # Options: 'none', 'basic', 'full'
+        'default_file_types': 'pdf,doc,docx,xls,xlsx,ppt,pptx'
     }
     
     # Add optional feature settings
@@ -1218,90 +1145,6 @@ def process_batch_job(batch_id):
                     db.session.commit()
             except Exception as inner_e:
                 logger.error(f"Error updating batch status: {str(inner_e)}")
-
-# Content Analysis Routes
-@app.route('/analyses')
-def analysis_list():
-    """List all content analyses"""
-    # Query the database for content analysis records
-    analyses = CrawlResult.query.filter(CrawlResult.content_insights != None).order_by(CrawlResult.created_at.desc()).all()
-    
-    return render_template('analyses.html', analyses=analyses)
-
-@app.route('/analyze/<int:result_id>', methods=['GET', 'POST'])
-def analyze_content(result_id):
-    """Analyze content of a crawl result"""
-    result = CrawlResult.query.get_or_404(result_id)
-    
-    # Check if analysis already exists
-    has_analysis = result.content_insights is not None
-    
-    if request.method == 'POST':
-        # Get the API key from the form or settings
-        api_key = request.form.get('api_key', '')
-        analysis_level = request.form.get('analysis_level', 'basic')
-        
-        # If not provided in form, try to get from settings
-        if not api_key:
-            api_setting = Setting.query.filter_by(key='openai_api_key').first()
-            if api_setting and api_setting.value:
-                api_key = api_setting.value
-        
-        try:
-            # Import the content analyzer
-            from content_analyzer import analyze_content_quality
-            
-            # Create content data dictionary
-            content_data = {
-                'text': '',  # We'll need to read the file
-                'title': result.title,
-                'format': Path(result.output_file).suffix.lstrip('.'),
-                'url': result.url
-            }
-            
-            # Read the content from the file
-            try:
-                with open(result.output_file, 'r', encoding='utf-8') as f:
-                    content_data['text'] = f.read()
-            except Exception as e:
-                flash(f"Error reading content file: {str(e)}", 'danger')
-                return redirect(url_for('job_detail', job_id=result.job_id))
-            
-            # Perform the analysis
-            analysis_results = analyze_content_quality(content_data, api_key)
-            
-            # If level is basic, remove AI analysis to save tokens
-            if analysis_level == 'basic' and 'ai_analysis' in analysis_results:
-                del analysis_results['ai_analysis']
-            
-            # Store the analysis in the database
-            result.content_insights = analysis_results
-            db.session.commit()
-            
-            flash("Content analysis completed successfully!", 'success')
-            return redirect(url_for('view_analysis', result_id=result.id))
-            
-        except ImportError:
-            flash("Content analyzer module not found. Please check your installation.", 'danger')
-            return redirect(url_for('job_detail', job_id=result.job_id))
-        except Exception as e:
-            flash(f"Error analyzing content: {str(e)}", 'danger')
-            return redirect(url_for('job_detail', job_id=result.job_id))
-    
-    # GET request - show the form
-    return render_template('analyze_form.html', result=result, has_analysis=has_analysis)
-
-@app.route('/view-analysis/<int:result_id>')
-def view_analysis(result_id):
-    """View content analysis results"""
-    result = CrawlResult.query.get_or_404(result_id)
-    
-    # Check if analysis exists
-    if not result.content_insights:
-        flash("No content analysis available for this result.", 'warning')
-        return redirect(url_for('job_detail', job_id=result.job_id))
-    
-    return render_template('view_analysis.html', result=result)
 
 # Initialize settings when the app starts
 with app.app_context():
