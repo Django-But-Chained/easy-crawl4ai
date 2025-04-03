@@ -27,6 +27,16 @@ class CrawlJob(db.Model):
     max_size = Column(Integer, nullable=True)
     max_files = Column(Integer, nullable=True)
     
+    # Crawl speed limiting options
+    use_random_delay = Column(Boolean, default=False)
+    random_delay_min = Column(Integer, default=1)     # Minimum delay in seconds
+    random_delay_max = Column(Integer, default=5)     # Maximum delay in seconds
+    use_adaptive_delay = Column(Boolean, default=False)
+    adaptive_delay_factor = Column(Integer, default=2) # Multiply response time by this factor
+    use_scheduled_breaks = Column(Boolean, default=False)
+    requests_before_break = Column(Integer, default=50) # Number of requests before taking a break
+    break_duration = Column(Integer, default=30)       # Break duration in seconds
+    
     # Metadata
     status = Column(String(20), default='pending')  # pending, running, completed, failed
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -56,6 +66,14 @@ class CrawlJob(db.Model):
             'file_types': self.file_types,
             'max_size': self.max_size,
             'max_files': self.max_files,
+            'use_random_delay': self.use_random_delay,
+            'random_delay_min': self.random_delay_min,
+            'random_delay_max': self.random_delay_max,
+            'use_adaptive_delay': self.use_adaptive_delay,
+            'adaptive_delay_factor': self.adaptive_delay_factor,
+            'use_scheduled_breaks': self.use_scheduled_breaks,
+            'requests_before_break': self.requests_before_break,
+            'break_duration': self.break_duration,
             'status': self.status,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'completed_at': self.completed_at.isoformat() if self.completed_at else None,
@@ -116,6 +134,16 @@ class BatchJob(db.Model):
     concurrent_workers = Column(Integer, default=3)  # How many URLs to process concurrently
     timeout_per_url = Column(Integer, default=60)    # Timeout in seconds per URL
     
+    # Crawl speed limiting options
+    use_random_delay = Column(Boolean, default=False)
+    random_delay_min = Column(Integer, default=1)     # Minimum delay in seconds
+    random_delay_max = Column(Integer, default=5)     # Maximum delay in seconds
+    use_adaptive_delay = Column(Boolean, default=False)
+    adaptive_delay_factor = Column(Integer, default=2) # Multiply response time by this factor
+    use_scheduled_breaks = Column(Boolean, default=False)
+    requests_before_break = Column(Integer, default=50) # Number of requests before taking a break
+    break_duration = Column(Integer, default=30)       # Break duration in seconds
+    
     # Metadata
     status = Column(String(20), default='pending')  # pending, running, completed, failed, paused
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -147,6 +175,14 @@ class BatchJob(db.Model):
             'include_links': self.include_links,
             'concurrent_workers': self.concurrent_workers,
             'timeout_per_url': self.timeout_per_url,
+            'use_random_delay': self.use_random_delay,
+            'random_delay_min': self.random_delay_min,
+            'random_delay_max': self.random_delay_max,
+            'use_adaptive_delay': self.use_adaptive_delay,
+            'adaptive_delay_factor': self.adaptive_delay_factor,
+            'use_scheduled_breaks': self.use_scheduled_breaks,
+            'requests_before_break': self.requests_before_break,
+            'break_duration': self.break_duration,
             'status': self.status,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'started_at': self.started_at.isoformat() if self.started_at else None,

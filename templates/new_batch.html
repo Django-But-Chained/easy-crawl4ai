@@ -128,6 +128,78 @@ https://third-site.net"></textarea>
                     </div>
                 </div>
                 
+                <!-- Crawl Speed Limiting Section -->
+                <div class="mb-4 border-bottom pb-3">
+                    <h4><i class="bi bi-speedometer2 me-2"></i>Crawl Speed Limiting</h4>
+                    <p class="text-muted mb-3">These options help prevent overwhelming websites with too many requests.</p>
+                    
+                    <!-- Random Delay -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="use_random_delay" name="use_random_delay">
+                            <label class="form-check-label" for="use_random_delay">
+                                Use Random Delay Between Requests
+                            </label>
+                        </div>
+                        <div class="form-text">Adds a random delay between requests to simulate human browsing behavior.</div>
+                    </div>
+                    
+                    <div class="row mb-3" id="random_delay_options">
+                        <div class="col-md-6">
+                            <label for="random_delay_min" class="form-label">Minimum Delay (seconds)</label>
+                            <input type="number" class="form-control" id="random_delay_min" name="random_delay_min" 
+                                   min="0" max="10" step="0.5" value="1">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="random_delay_max" class="form-label">Maximum Delay (seconds)</label>
+                            <input type="number" class="form-control" id="random_delay_max" name="random_delay_max" 
+                                   min="1" max="20" step="0.5" value="5">
+                        </div>
+                    </div>
+                    
+                    <!-- Adaptive Delay -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="use_adaptive_delay" name="use_adaptive_delay">
+                            <label class="form-check-label" for="use_adaptive_delay">
+                                Use Adaptive Delay (Based on Server Response Time)
+                            </label>
+                        </div>
+                        <div class="form-text">Automatically adjusts delay based on how long the server takes to respond.</div>
+                    </div>
+                    
+                    <div class="mb-3" id="adaptive_delay_options">
+                        <label for="adaptive_delay_factor" class="form-label">Adaptive Delay Factor</label>
+                        <input type="number" class="form-control" id="adaptive_delay_factor" name="adaptive_delay_factor" 
+                               min="1" max="5" step="0.5" value="2">
+                        <div class="form-text">Multiplier for server response time (e.g., 2 means wait twice as long as the response took).</div>
+                    </div>
+                    
+                    <!-- Scheduled Breaks -->
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="use_scheduled_breaks" name="use_scheduled_breaks">
+                            <label class="form-check-label" for="use_scheduled_breaks">
+                                Take Scheduled Breaks During Crawling
+                            </label>
+                        </div>
+                        <div class="form-text">Pauses crawling periodically to avoid being flagged as a bot.</div>
+                    </div>
+                    
+                    <div class="row mb-3" id="scheduled_breaks_options">
+                        <div class="col-md-6">
+                            <label for="requests_before_break" class="form-label">Requests Before Break</label>
+                            <input type="number" class="form-control" id="requests_before_break" name="requests_before_break" 
+                                   min="10" max="200" value="50">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="break_duration" class="form-label">Break Duration (seconds)</label>
+                            <input type="number" class="form-control" id="break_duration" name="break_duration" 
+                                   min="5" max="300" value="30">
+                        </div>
+                    </div>
+                </div>
+                
                 <!-- Schedule Section (simplified for now) -->
                 <div class="mb-4">
                     <h4><i class="bi bi-clock me-2"></i>Scheduling</h4>
@@ -191,4 +263,38 @@ https://third-site.net"></textarea>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Speed limiting options toggle functionality
+        const useRandomDelay = document.getElementById('use_random_delay');
+        const randomDelayOptions = document.getElementById('random_delay_options');
+        
+        const useAdaptiveDelay = document.getElementById('use_adaptive_delay');
+        const adaptiveDelayOptions = document.getElementById('adaptive_delay_options');
+        
+        const useScheduledBreaks = document.getElementById('use_scheduled_breaks');
+        const scheduledBreaksOptions = document.getElementById('scheduled_breaks_options');
+        
+        // Initialize visibility based on checked state
+        randomDelayOptions.style.display = useRandomDelay.checked ? 'flex' : 'none';
+        adaptiveDelayOptions.style.display = useAdaptiveDelay.checked ? 'block' : 'none';
+        scheduledBreaksOptions.style.display = useScheduledBreaks.checked ? 'flex' : 'none';
+        
+        // Add event listeners to toggle visibility
+        useRandomDelay.addEventListener('change', function() {
+            randomDelayOptions.style.display = this.checked ? 'flex' : 'none';
+        });
+        
+        useAdaptiveDelay.addEventListener('change', function() {
+            adaptiveDelayOptions.style.display = this.checked ? 'block' : 'none';
+        });
+        
+        useScheduledBreaks.addEventListener('change', function() {
+            scheduledBreaksOptions.style.display = this.checked ? 'flex' : 'none';
+        });
+    });
+</script>
 {% endblock %}

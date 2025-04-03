@@ -210,6 +210,14 @@ def crawl(
 @click.option('--selector', help='CSS selector to extract specific content')
 @click.option('--max-retries', default=3, help='Maximum number of retry attempts')
 @click.option('--concurrent', default=5, help='Number of concurrent requests')
+@click.option('--random-delay', is_flag=True, help='Use random delay between requests to be more respectful')
+@click.option('--random-delay-min', default=1, help='Minimum delay in seconds (with random-delay)')
+@click.option('--random-delay-max', default=5, help='Maximum delay in seconds (with random-delay)')
+@click.option('--adaptive-delay', is_flag=True, help='Use adaptive delay based on response time')
+@click.option('--adaptive-factor', default=2, help='Multiply response time by this factor (with adaptive-delay)')
+@click.option('--scheduled-breaks', is_flag=True, help='Take scheduled breaks during crawling')
+@click.option('--requests-before-break', default=50, help='Number of requests before taking a break')
+@click.option('--break-duration', default=30, help='Break duration in seconds')
 def crawl_multiple(
     urls: List[str], 
     output_dir: str, 
@@ -220,7 +228,15 @@ def crawl_multiple(
     wait: int,
     selector: Optional[str],
     max_retries: int,
-    concurrent: int
+    concurrent: int,
+    random_delay: bool,
+    random_delay_min: int,
+    random_delay_max: int,
+    adaptive_delay: bool,
+    adaptive_factor: int,
+    scheduled_breaks: bool,
+    requests_before_break: int,
+    break_duration: int
 ):
     """
     Crawl multiple URLs and save the content.
@@ -261,7 +277,15 @@ def crawl_multiple(
                 include_links=include_links,
                 wait_time=wait,
                 selector=selector,
-                max_retries=max_retries
+                max_retries=max_retries,
+                random_delay=random_delay,
+                random_delay_min=random_delay_min,
+                random_delay_max=random_delay_max,
+                adaptive_delay=adaptive_delay,
+                adaptive_delay_factor=adaptive_factor,
+                scheduled_breaks=scheduled_breaks,
+                requests_before_break=requests_before_break,
+                break_duration=break_duration
             )
             
             # Crawl the URLs
@@ -307,6 +331,14 @@ def crawl_multiple(
 @click.option('-s', '--stay-within-domain', is_flag=True, default=True, help='Stay within the original domain')
 @click.option('--filename-prefix', default='page', help='Prefix for output filenames')
 @click.option('--max-retries', default=3, help='Maximum number of retry attempts')
+@click.option('--random-delay', is_flag=True, help='Use random delay between requests to be more respectful')
+@click.option('--random-delay-min', default=1, help='Minimum delay in seconds (with random-delay)')
+@click.option('--random-delay-max', default=5, help='Maximum delay in seconds (with random-delay)')
+@click.option('--adaptive-delay', is_flag=True, help='Use adaptive delay based on response time')
+@click.option('--adaptive-factor', default=2, help='Multiply response time by this factor (with adaptive-delay)')
+@click.option('--scheduled-breaks', is_flag=True, help='Take scheduled breaks during crawling')
+@click.option('--requests-before-break', default=50, help='Number of requests before taking a break')
+@click.option('--break-duration', default=30, help='Break duration in seconds')
 def deep_crawl(
     url: str, 
     output_dir: str, 
@@ -318,7 +350,15 @@ def deep_crawl(
     max_pages: int,
     stay_within_domain: bool,
     filename_prefix: str,
-    max_retries: int
+    max_retries: int,
+    random_delay: bool,
+    random_delay_min: int,
+    random_delay_max: int,
+    adaptive_delay: bool,
+    adaptive_factor: int,
+    scheduled_breaks: bool,
+    requests_before_break: int,
+    break_duration: int
 ):
     """
     Perform deep crawling starting from a URL.
@@ -359,7 +399,15 @@ def deep_crawl(
                 include_images=include_images,
                 include_links=include_links,
                 stay_within_domain=stay_within_domain,
-                max_retries=max_retries
+                max_retries=max_retries,
+                random_delay=random_delay,
+                random_delay_min=random_delay_min,
+                random_delay_max=random_delay_max,
+                adaptive_delay=adaptive_delay,
+                adaptive_delay_factor=adaptive_factor,
+                scheduled_breaks=scheduled_breaks,
+                requests_before_break=requests_before_break,
+                break_duration=break_duration
             )
             
             # Perform deep crawl
@@ -405,13 +453,29 @@ def deep_crawl(
 @click.option('-m', '--max-size', default=100, help='Maximum file size in MB')
 @click.option('-b', '--browser', is_flag=True, help='Use browser-based crawling (requires playwright)')
 @click.option('-f', '--max-files', default=10, help='Maximum number of files to download')
+@click.option('--random-delay', is_flag=True, help='Use random delay between requests to be more respectful')
+@click.option('--random-delay-min', default=1, help='Minimum delay in seconds (with random-delay)')
+@click.option('--random-delay-max', default=5, help='Maximum delay in seconds (with random-delay)')
+@click.option('--adaptive-delay', is_flag=True, help='Use adaptive delay based on response time')
+@click.option('--adaptive-factor', default=2, help='Multiply response time by this factor (with adaptive-delay)')
+@click.option('--scheduled-breaks', is_flag=True, help='Take scheduled breaks during crawling')
+@click.option('--requests-before-break', default=50, help='Number of requests before taking a break')
+@click.option('--break-duration', default=30, help='Break duration in seconds')
 def download_files(
     url: str,
     output_dir: str,
     file_types: str,
     max_size: int,
     browser: bool,
-    max_files: int
+    max_files: int,
+    random_delay: bool,
+    random_delay_min: int,
+    random_delay_max: int,
+    adaptive_delay: bool,
+    adaptive_factor: int,
+    scheduled_breaks: bool,
+    requests_before_break: int,
+    break_duration: int
 ):
     """
     Download files from a website.
@@ -459,7 +523,17 @@ def download_files(
         
         with console.status(f"[bold green]Searching for files at {url}...[/bold green]"):
             # Set up crawler with options
-            crawler = crawl4ai.Crawler(use_browser=browser)
+            crawler = crawl4ai.Crawler(
+                use_browser=browser,
+                random_delay=random_delay,
+                random_delay_min=random_delay_min,
+                random_delay_max=random_delay_max,
+                adaptive_delay=adaptive_delay,
+                adaptive_delay_factor=adaptive_factor,
+                scheduled_breaks=scheduled_breaks,
+                requests_before_break=requests_before_break,
+                break_duration=break_duration
+            )
             
             # Find files
             files = crawler.find_files(
@@ -539,7 +613,8 @@ def info():
         "• Deep crawling - Follow links to explore websites thoroughly\n"
         "• File downloading - Find and download documents from websites\n"
         "• Multiple output formats - Save as Markdown, HTML, Text, or JSON\n"
-        "• Browser-based crawling - Render JavaScript-heavy sites accurately",
+        "• Browser-based crawling - Render JavaScript-heavy sites accurately\n"
+        "• Speed limiting - Control crawl rate with random delays, adaptive timing, and scheduled breaks",
         title="Features",
         border_style="cyan",
     )
@@ -564,6 +639,9 @@ def info():
         "• Use [cyan]--browser[/cyan] for JavaScript-heavy sites (requires playwright)\n"
         "• Use [cyan]--format[/cyan] to specify the output format (markdown, html, text, json)\n"
         "• For deep crawling, use [cyan]-d/--max-depth[/cyan] to control how many links to follow\n"
+        "• Use [cyan]--random-delay[/cyan] to add random delays between requests\n"
+        "• Use [cyan]--adaptive-delay[/cyan] to automatically adjust delay based on response time\n"
+        "• Use [cyan]--scheduled-breaks[/cyan] to pause periodically during large crawls\n"
         "• Use [cyan]--help[/cyan] with any command to see all available options\n\n"
         "[bold]For a web interface:[/bold] Run [cyan]easy_crawl4ai_web[/cyan] from command line",
         title="Usage Tips",

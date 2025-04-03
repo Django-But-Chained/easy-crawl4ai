@@ -76,6 +76,65 @@
                 </div>
             </div>
             
+            <div class="mb-3">
+                <a class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" href="#speedOptions" role="button" aria-expanded="false" aria-controls="speedOptions">
+                    Speed Limiting Options ▼
+                </a>
+                <div class="collapse mt-3" id="speedOptions">
+                    <div class="card card-body bg-light">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="use_random_delay" name="use_random_delay">
+                                    <label class="form-check-label" for="use_random_delay">Use Random Delay</label>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-6">
+                                        <label for="random_delay_min" class="form-label">Min Delay (s)</label>
+                                        <input type="number" class="form-control form-control-sm" id="random_delay_min" name="random_delay_min" value="1" min="0" step="0.5">
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="random_delay_max" class="form-label">Max Delay (s)</label>
+                                        <input type="number" class="form-control form-control-sm" id="random_delay_max" name="random_delay_max" value="5" min="0" step="0.5">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="use_adaptive_delay" name="use_adaptive_delay">
+                                    <label class="form-check-label" for="use_adaptive_delay">Use Adaptive Delay</label>
+                                </div>
+                                <div class="mt-2">
+                                    <label for="adaptive_delay_factor" class="form-label">Delay Factor</label>
+                                    <input type="number" class="form-control form-control-sm" id="adaptive_delay_factor" name="adaptive_delay_factor" value="2" min="1" step="0.5">
+                                    <div class="form-text small">Multiplies response time by this factor</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="use_scheduled_breaks" name="use_scheduled_breaks">
+                                    <label class="form-check-label" for="use_scheduled_breaks">Take Scheduled Breaks</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <label for="requests_before_break" class="form-label">Requests Before Break</label>
+                                        <input type="number" class="form-control form-control-sm" id="requests_before_break" name="requests_before_break" value="50" min="1">
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="break_duration" class="form-label">Break Duration (s)</label>
+                                        <input type="number" class="form-control form-control-sm" id="break_duration" name="break_duration" value="30" min="1">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <button type="submit" class="btn btn-primary">Start Crawling</button>
         </form>
     </div>
@@ -126,6 +185,65 @@ https://another-site.com" required></textarea>
                     <div class="form-check form-switch">
                         <input class="form-check-input" type="checkbox" id="include_links_multiple" name="include_links" checked>
                         <label class="form-check-label" for="include_links_multiple">Include Links</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <a class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" href="#speedOptionsMultiple" role="button" aria-expanded="false" aria-controls="speedOptionsMultiple">
+                    Speed Limiting Options ▼
+                </a>
+                <div class="collapse mt-3" id="speedOptionsMultiple">
+                    <div class="card card-body bg-light">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="use_random_delay_multiple" name="use_random_delay">
+                                    <label class="form-check-label" for="use_random_delay_multiple">Use Random Delay</label>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-6">
+                                        <label for="random_delay_min_multiple" class="form-label">Min Delay (s)</label>
+                                        <input type="number" class="form-control form-control-sm" id="random_delay_min_multiple" name="random_delay_min" value="1" min="0" step="0.5">
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="random_delay_max_multiple" class="form-label">Max Delay (s)</label>
+                                        <input type="number" class="form-control form-control-sm" id="random_delay_max_multiple" name="random_delay_max" value="5" min="0" step="0.5">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="use_adaptive_delay_multiple" name="use_adaptive_delay">
+                                    <label class="form-check-label" for="use_adaptive_delay_multiple">Use Adaptive Delay</label>
+                                </div>
+                                <div class="mt-2">
+                                    <label for="adaptive_delay_factor_multiple" class="form-label">Delay Factor</label>
+                                    <input type="number" class="form-control form-control-sm" id="adaptive_delay_factor_multiple" name="adaptive_delay_factor" value="2" min="1" step="0.5">
+                                    <div class="form-text small">Multiplies response time by this factor</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="use_scheduled_breaks_multiple" name="use_scheduled_breaks">
+                                    <label class="form-check-label" for="use_scheduled_breaks_multiple">Take Scheduled Breaks</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <label for="requests_before_break_multiple" class="form-label">Requests Before Break</label>
+                                        <input type="number" class="form-control form-control-sm" id="requests_before_break_multiple" name="requests_before_break" value="50" min="1">
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="break_duration_multiple" class="form-label">Break Duration (s)</label>
+                                        <input type="number" class="form-control form-control-sm" id="break_duration_multiple" name="break_duration" value="30" min="1">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -187,6 +305,65 @@ https://another-site.com" required></textarea>
                 </div>
             </div>
             
+            <div class="mb-3">
+                <a class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" href="#speedOptionsDeep" role="button" aria-expanded="false" aria-controls="speedOptionsDeep">
+                    Speed Limiting Options ▼
+                </a>
+                <div class="collapse mt-3" id="speedOptionsDeep">
+                    <div class="card card-body bg-light">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="use_random_delay_deep" name="use_random_delay">
+                                    <label class="form-check-label" for="use_random_delay_deep">Use Random Delay</label>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-6">
+                                        <label for="random_delay_min_deep" class="form-label">Min Delay (s)</label>
+                                        <input type="number" class="form-control form-control-sm" id="random_delay_min_deep" name="random_delay_min" value="1" min="0" step="0.5">
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="random_delay_max_deep" class="form-label">Max Delay (s)</label>
+                                        <input type="number" class="form-control form-control-sm" id="random_delay_max_deep" name="random_delay_max" value="5" min="0" step="0.5">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="use_adaptive_delay_deep" name="use_adaptive_delay">
+                                    <label class="form-check-label" for="use_adaptive_delay_deep">Use Adaptive Delay</label>
+                                </div>
+                                <div class="mt-2">
+                                    <label for="adaptive_delay_factor_deep" class="form-label">Delay Factor</label>
+                                    <input type="number" class="form-control form-control-sm" id="adaptive_delay_factor_deep" name="adaptive_delay_factor" value="2" min="1" step="0.5">
+                                    <div class="form-text small">Multiplies response time by this factor</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="use_scheduled_breaks_deep" name="use_scheduled_breaks">
+                                    <label class="form-check-label" for="use_scheduled_breaks_deep">Take Scheduled Breaks</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <label for="requests_before_break_deep" class="form-label">Requests Before Break</label>
+                                        <input type="number" class="form-control form-control-sm" id="requests_before_break_deep" name="requests_before_break" value="50" min="1">
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="break_duration_deep" class="form-label">Break Duration (s)</label>
+                                        <input type="number" class="form-control form-control-sm" id="break_duration_deep" name="break_duration" value="30" min="1">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <button type="submit" class="btn btn-primary">Start Deep Crawling</button>
         </form>
     </div>
@@ -234,13 +411,72 @@ https://another-site.com" required></textarea>
                 </div>
             </div>
             
+            <div class="mb-3">
+                <a class="btn btn-sm btn-outline-secondary" data-bs-toggle="collapse" href="#speedOptionsFiles" role="button" aria-expanded="false" aria-controls="speedOptionsFiles">
+                    Speed Limiting Options ▼
+                </a>
+                <div class="collapse mt-3" id="speedOptionsFiles">
+                    <div class="card card-body bg-light">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="use_random_delay_files" name="use_random_delay">
+                                    <label class="form-check-label" for="use_random_delay_files">Use Random Delay</label>
+                                </div>
+                                <div class="row mt-2">
+                                    <div class="col-6">
+                                        <label for="random_delay_min_files" class="form-label">Min Delay (s)</label>
+                                        <input type="number" class="form-control form-control-sm" id="random_delay_min_files" name="random_delay_min" value="1" min="0" step="0.5">
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="random_delay_max_files" class="form-label">Max Delay (s)</label>
+                                        <input type="number" class="form-control form-control-sm" id="random_delay_max_files" name="random_delay_max" value="5" min="0" step="0.5">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="use_adaptive_delay_files" name="use_adaptive_delay">
+                                    <label class="form-check-label" for="use_adaptive_delay_files">Use Adaptive Delay</label>
+                                </div>
+                                <div class="mt-2">
+                                    <label for="adaptive_delay_factor_files" class="form-label">Delay Factor</label>
+                                    <input type="number" class="form-control form-control-sm" id="adaptive_delay_factor_files" name="adaptive_delay_factor" value="2" min="1" step="0.5">
+                                    <div class="form-text small">Multiplies response time by this factor</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="use_scheduled_breaks_files" name="use_scheduled_breaks">
+                                    <label class="form-check-label" for="use_scheduled_breaks_files">Take Scheduled Breaks</label>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <label for="requests_before_break_files" class="form-label">Requests Before Break</label>
+                                        <input type="number" class="form-control form-control-sm" id="requests_before_break_files" name="requests_before_break" value="50" min="1">
+                                    </div>
+                                    <div class="col-6">
+                                        <label for="break_duration_files" class="form-label">Break Duration (s)</label>
+                                        <input type="number" class="form-control form-control-sm" id="break_duration_files" name="break_duration" value="30" min="1">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
             <button type="submit" class="btn btn-primary">Start Downloading Files</button>
         </form>
     </div>
 </div>
 
 <div class="row mt-5">
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card h-100">
             <div class="card-body text-center">
                 <div class="feature-icon">📄</div>
@@ -249,7 +485,7 @@ https://another-site.com" required></textarea>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card h-100">
             <div class="card-body text-center">
                 <div class="feature-icon">🔍</div>
@@ -258,12 +494,21 @@ https://another-site.com" required></textarea>
             </div>
         </div>
     </div>
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card h-100">
             <div class="card-body text-center">
                 <div class="feature-icon">📂</div>
                 <h3 class="card-title">File Downloading</h3>
                 <p class="card-text">Find and download specific file types from websites, perfect for document collection.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body text-center">
+                <div class="feature-icon">⏱️</div>
+                <h3 class="card-title">Speed Limiting</h3>
+                <p class="card-text">Control crawl speed with random delays, adaptive timing, and scheduled breaks to be respectful to websites.</p>
             </div>
         </div>
     </div>

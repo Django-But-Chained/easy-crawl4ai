@@ -63,6 +63,59 @@
                             {% if settings|selectattr('key', 'equalto', 'enable_browser_crawling')|map(attribute='value')|first == 'true' %}checked{% endif %}>
                         <label class="form-check-label" for="enable_browser_crawling">Enable Browser-Based Crawling by Default</label>
                     </div>
+
+                    <h5 class="mt-4 mb-3">Crawl Speed Limiting</h5>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="use_random_delay" name="setting_use_random_delay" 
+                            {% if settings|selectattr('key', 'equalto', 'use_random_delay')|map(attribute='value')|first == 'true' %}checked{% endif %}>
+                        <label class="form-check-label" for="use_random_delay">Use Random Delay Between Requests</label>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="random_delay_min" class="form-label">Random Delay Min (seconds)</label>
+                            <input type="number" class="form-control" id="random_delay_min" name="setting_random_delay_min" 
+                                value="{{ settings|selectattr('key', 'equalto', 'random_delay_min')|map(attribute='value')|first|default('1') }}" min="0" max="10" step="0.5">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="random_delay_max" class="form-label">Random Delay Max (seconds)</label>
+                            <input type="number" class="form-control" id="random_delay_max" name="setting_random_delay_max" 
+                                value="{{ settings|selectattr('key', 'equalto', 'random_delay_max')|map(attribute='value')|first|default('5') }}" min="1" max="20" step="0.5">
+                        </div>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="use_adaptive_delay" name="setting_use_adaptive_delay" 
+                            {% if settings|selectattr('key', 'equalto', 'use_adaptive_delay')|map(attribute='value')|first == 'true' %}checked{% endif %}>
+                        <label class="form-check-label" for="use_adaptive_delay">Use Adaptive Delay (Based on Server Response Time)</label>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="adaptive_delay_factor" class="form-label">Adaptive Delay Factor</label>
+                        <input type="number" class="form-control" id="adaptive_delay_factor" name="setting_adaptive_delay_factor" 
+                            value="{{ settings|selectattr('key', 'equalto', 'adaptive_delay_factor')|map(attribute='value')|first|default('2') }}" min="1" max="5" step="0.5">
+                        <div class="form-text">Multiplier for server response time (e.g., 2 means wait twice as long as the response took)</div>
+                    </div>
+                    
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" id="use_scheduled_breaks" name="setting_use_scheduled_breaks" 
+                            {% if settings|selectattr('key', 'equalto', 'use_scheduled_breaks')|map(attribute='value')|first == 'true' %}checked{% endif %}>
+                        <label class="form-check-label" for="use_scheduled_breaks">Take Scheduled Breaks During Crawling</label>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="requests_before_break" class="form-label">Requests Before Break</label>
+                            <input type="number" class="form-control" id="requests_before_break" name="setting_requests_before_break" 
+                                value="{{ settings|selectattr('key', 'equalto', 'requests_before_break')|map(attribute='value')|first|default('50') }}" min="10" max="200">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="break_duration" class="form-label">Break Duration (seconds)</label>
+                            <input type="number" class="form-control" id="break_duration" name="setting_break_duration" 
+                                value="{{ settings|selectattr('key', 'equalto', 'break_duration')|map(attribute='value')|first|default('30') }}" min="5" max="300">
+                        </div>
+                    </div>
                     
                     <button type="submit" class="btn btn-primary">Save Settings</button>
                 </form>

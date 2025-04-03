@@ -170,6 +170,21 @@
                             <small><strong>Include Links:</strong> {% if batch.include_links %}Yes{% else %}No{% endif %}</small>
                         </div>
                     </div>
+                    
+                    <!-- Speed Limiting Configuration -->
+                    <h6 class="mt-3">Speed Limiting</h6>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small><strong>Random Delay:</strong> {% if batch.use_random_delay %}Yes ({{ batch.random_delay_min }}s - {{ batch.random_delay_max }}s){% else %}No{% endif %}</small><br>
+                            <small><strong>Adaptive Delay:</strong> {% if batch.use_adaptive_delay %}Yes (Factor: {{ batch.adaptive_delay_factor }}){% else %}No{% endif %}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <small><strong>Scheduled Breaks:</strong> {% if batch.use_scheduled_breaks %}Yes{% else %}No{% endif %}</small>
+                            {% if batch.use_scheduled_breaks %}
+                            <br><small><strong>Break Schedule:</strong> After {{ batch.requests_before_break }} requests, pause for {{ batch.break_duration }}s</small>
+                            {% endif %}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

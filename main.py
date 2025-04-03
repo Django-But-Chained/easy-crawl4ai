@@ -115,6 +115,16 @@ def run_crawl():
     max_size = int(request.form.get('max_size', 100))
     max_files = int(request.form.get('max_files', 10))
     
+    # Speed limiting options
+    use_random_delay = request.form.get('use_random_delay') == 'on'
+    random_delay_min = float(request.form.get('random_delay_min', 1))
+    random_delay_max = float(request.form.get('random_delay_max', 5))
+    use_adaptive_delay = request.form.get('use_adaptive_delay') == 'on'
+    adaptive_delay_factor = float(request.form.get('adaptive_delay_factor', 2))
+    use_scheduled_breaks = request.form.get('use_scheduled_breaks') == 'on'
+    requests_before_break = int(request.form.get('requests_before_break', 50))
+    break_duration = int(request.form.get('break_duration', 30))
+    
     # Create output directory
     output_path = Path(output_dir)
     ensure_directory(output_path)
@@ -135,6 +145,15 @@ def run_crawl():
         file_types=file_types if crawl_type == 'files' else None,
         max_size=max_size if crawl_type == 'files' else None,
         max_files=max_files if crawl_type == 'files' else None,
+        # Speed limiting options
+        use_random_delay=use_random_delay,
+        random_delay_min=int(random_delay_min),
+        random_delay_max=int(random_delay_max),
+        use_adaptive_delay=use_adaptive_delay,
+        adaptive_delay_factor=int(adaptive_delay_factor),
+        use_scheduled_breaks=use_scheduled_breaks,
+        requests_before_break=requests_before_break,
+        break_duration=break_duration,
         status='running',
         created_at=datetime.utcnow()
     )
@@ -177,7 +196,16 @@ def run_crawl():
             use_browser=use_browser,
             include_images=include_images,
             include_links=include_links,
-            stay_within_domain=(stay_within_domain if crawl_type == 'deep' else True)
+            stay_within_domain=(stay_within_domain if crawl_type == 'deep' else True),
+            # Speed limiting options
+            use_random_delay=use_random_delay,
+            random_delay_min=random_delay_min,
+            random_delay_max=random_delay_max,
+            use_adaptive_delay=use_adaptive_delay,
+            adaptive_delay_factor=adaptive_delay_factor,
+            use_scheduled_breaks=use_scheduled_breaks,
+            requests_before_break=requests_before_break,
+            break_duration=break_duration
         )
         
         results = []
@@ -464,7 +492,16 @@ def init_default_settings():
         'enable_browser_crawling': 'true',
         'default_max_depth': '3',
         'default_max_pages': '20',
-        'default_file_types': 'pdf,doc,docx,xls,xlsx,ppt,pptx'
+        'default_file_types': 'pdf,doc,docx,xls,xlsx,ppt,pptx',
+        # Crawl speed limiting options
+        'use_random_delay': 'false',
+        'random_delay_min': '1',
+        'random_delay_max': '5',
+        'use_adaptive_delay': 'false',
+        'adaptive_delay_factor': '2',
+        'use_scheduled_breaks': 'false',
+        'requests_before_break': '50',
+        'break_duration': '30'
     }
     
     # Add optional feature settings
@@ -700,6 +737,16 @@ def create_batch():
     schedule_type = request.form.get('schedule_type', 'now')
     validate_urls = request.form.get('validate_urls') == 'on'
     
+    # Speed limiting options
+    use_random_delay = request.form.get('use_random_delay') == 'on'
+    random_delay_min = float(request.form.get('random_delay_min', 1))
+    random_delay_max = float(request.form.get('random_delay_max', 5))
+    use_adaptive_delay = request.form.get('use_adaptive_delay') == 'on'
+    adaptive_delay_factor = float(request.form.get('adaptive_delay_factor', 2))
+    use_scheduled_breaks = request.form.get('use_scheduled_breaks') == 'on'
+    requests_before_break = int(request.form.get('requests_before_break', 50))
+    break_duration = int(request.form.get('break_duration', 30))
+    
     # Validate input
     if not name:
         flash('Please enter a name for the batch job', 'error')
@@ -750,6 +797,16 @@ def create_batch():
         include_links=include_links,
         concurrent_workers=concurrent_workers,
         timeout_per_url=timeout_per_url,
+        # Speed limiting options
+        use_random_delay=use_random_delay,
+        random_delay_min=random_delay_min,
+        random_delay_max=random_delay_max,
+        use_adaptive_delay=use_adaptive_delay,
+        adaptive_delay_factor=adaptive_delay_factor,
+        use_scheduled_breaks=use_scheduled_breaks,
+        requests_before_break=requests_before_break,
+        break_duration=break_duration,
+        # Other settings
         status='pending' if schedule_type == 'now' else 'paused',
         total_urls=len(valid_urls),
         created_at=datetime.utcnow()
@@ -1004,7 +1061,16 @@ def process_batch_job(batch_id):
                 use_browser=batch.use_browser,
                 include_images=batch.include_images,
                 include_links=batch.include_links,
-                timeout=batch.timeout_per_url
+                timeout=batch.timeout_per_url,
+                # Speed limiting options
+                use_random_delay=batch.use_random_delay,
+                random_delay_min=batch.random_delay_min,
+                random_delay_max=batch.random_delay_max,
+                use_adaptive_delay=batch.use_adaptive_delay,
+                adaptive_delay_factor=batch.adaptive_delay_factor,
+                use_scheduled_breaks=batch.use_scheduled_breaks,
+                requests_before_break=batch.requests_before_break,
+                break_duration=batch.break_duration
             )
             
             # Process items in batches based on concurrent_workers

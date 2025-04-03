@@ -148,6 +148,44 @@
                             <td>{{ job.max_files }}</td>
                         </tr>
                         {% endif %}
+                        
+                        <!-- Speed Limiting Options -->
+                        <tr>
+                            <th colspan="2" class="table-light">Speed Limiting Options</th>
+                        </tr>
+                        <tr>
+                            <th>Random Delay:</th>
+                            <td>
+                                {% if job.use_random_delay %}
+                                    <span class="badge bg-success">Enabled</span>
+                                    <small class="ms-2">{{ job.random_delay_min }}s - {{ job.random_delay_max }}s</small>
+                                {% else %}
+                                    <span class="badge bg-secondary">Disabled</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Adaptive Delay:</th>
+                            <td>
+                                {% if job.use_adaptive_delay %}
+                                    <span class="badge bg-success">Enabled</span>
+                                    <small class="ms-2">Factor: {{ job.adaptive_delay_factor }}</small>
+                                {% else %}
+                                    <span class="badge bg-secondary">Disabled</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        <tr>
+                            <th>Scheduled Breaks:</th>
+                            <td>
+                                {% if job.use_scheduled_breaks %}
+                                    <span class="badge bg-success">Enabled</span>
+                                    <small class="ms-2">After {{ job.requests_before_break }} requests, pause for {{ job.break_duration }}s</small>
+                                {% else %}
+                                    <span class="badge bg-secondary">Disabled</span>
+                                {% endif %}
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
