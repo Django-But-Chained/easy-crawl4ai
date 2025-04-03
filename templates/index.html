@@ -1,294 +1,478 @@
 <!DOCTYPE html>
-<html data-bs-theme="dark">
+<html lang="en" data-bs-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Easy Crawl4AI - Web Interface</title>
-    <link rel="stylesheet" href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css">
+    <title>Easy Crawl4AI - User-friendly Web Crawler</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
     <style>
-        .option-description {
-            font-size: 0.9rem;
-            color: #adb5bd;
-            margin-bottom: 1rem;
+        body {
+            padding-top: 2rem;
+            padding-bottom: 4rem;
         }
-        .command-section {
+        .form-section {
             display: none;
         }
-        .command-section.active {
+        .active-section {
             display: block;
+        }
+        .btn-crawl {
+            margin-top: 1rem;
+            width: 100%;
+        }
+        .feature-icon {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            color: var(--bs-info);
+        }
+        .card {
+            height: 100%;
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        .nav-pills .nav-link.active {
+            background-color: var(--bs-info);
         }
     </style>
 </head>
 <body>
-    <div class="container py-4">
-        <div class="row mb-4">
-            <div class="col-12">
-                <h1 class="text-center mb-3">Easy Crawl4AI</h1>
-                <p class="lead text-center">A user-friendly interface for the powerful crawl4ai web crawler</p>
-            </div>
-        </div>
+    <div class="container">
+        <header class="mb-5 text-center">
+            <h1 class="display-4">Easy Crawl4AI</h1>
+            <p class="lead">A user-friendly interface for the powerful crawl4ai web crawler</p>
+        </header>
 
-        <div class="row">
-            <div class="col-lg-8 mx-auto">
-                <div class="card bg-dark">
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="row mb-5">
+            <div class="col-md-6 offset-md-3">
+                <div class="card">
                     <div class="card-header">
-                        <h5 class="mb-0">Web Crawler Configuration</h5>
+                        <ul class="nav nav-pills card-header-pills" id="crawlTypeTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="single-tab" data-bs-toggle="pill" data-bs-target="#single" type="button" role="tab" aria-controls="single" aria-selected="true">Single URL</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="multiple-tab" data-bs-toggle="pill" data-bs-target="#multiple" type="button" role="tab" aria-controls="multiple" aria-selected="false">Multiple URLs</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="deep-tab" data-bs-toggle="pill" data-bs-target="#deep" type="button" role="tab" aria-controls="deep" aria-selected="false">Deep Crawl</button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="files-tab" data-bs-toggle="pill" data-bs-target="#files" type="button" role="tab" aria-controls="files" aria-selected="false">Download Files</button>
+                            </li>
+                        </ul>
                     </div>
                     <div class="card-body">
-                        <form id="crawlerForm">
-                            <div class="mb-3">
-                                <label for="commandType" class="form-label">Command Type:</label>
-                                <select id="commandType" name="command_type" class="form-select">
-                                    <option value="crawl">Single URL Crawl</option>
-                                    <option value="deep-crawl">Deep Crawl</option>
-                                    <option value="crawl-multiple">Multiple URLs Crawl</option>
-                                    <option value="download-files">Download Files</option>
-                                </select>
-                                <div class="option-description">
-                                    <div id="crawl-description">
-                                        Crawl a single URL and save the content. Perfect for quick retrieval of information from a specific web page.
+                        <form action="/crawl" method="POST">
+                            <div class="tab-content" id="crawlTypeTabContent">
+                                <!-- Single URL Crawl -->
+                                <div class="tab-pane fade show active" id="single" role="tabpanel" aria-labelledby="single-tab">
+                                    <h5 class="card-title">Crawl a Single URL</h5>
+                                    <p class="card-text text-muted">Extract content from a specific web page.</p>
+                                    
+                                    <input type="hidden" name="crawl_type" value="single">
+                                    
+                                    <div class="mb-3">
+                                        <label for="single-url" class="form-label">URL to Crawl</label>
+                                        <input type="url" class="form-control" id="single-url" name="url" placeholder="https://example.com" required>
+                                        <div class="form-text">Enter the full URL of the page you want to crawl.</div>
                                     </div>
-                                    <div id="deep-crawl-description" style="display: none;">
-                                        Crawl not only the provided URL but also follow links to discover and crawl additional pages. Great for exploring websites more thoroughly.
+                                    
+                                    <div class="mb-3">
+                                        <label for="single-output-dir" class="form-label">Output Directory</label>
+                                        <input type="text" class="form-control" id="single-output-dir" name="output_dir" value="./results">
+                                        <div class="form-text">Where to save the crawled content.</div>
                                     </div>
-                                    <div id="crawl-multiple-description" style="display: none;">
-                                        Crawl multiple URLs in parallel and save each result separately. Useful for batch processing of web pages.
+                                </div>
+                                
+                                <!-- Multiple URLs Crawl -->
+                                <div class="tab-pane fade" id="multiple" role="tabpanel" aria-labelledby="multiple-tab">
+                                    <h5 class="card-title">Crawl Multiple URLs</h5>
+                                    <p class="card-text text-muted">Extract content from multiple web pages at once.</p>
+                                    
+                                    <input type="hidden" name="crawl_type" value="multiple">
+                                    
+                                    <div class="mb-3">
+                                        <label for="multiple-urls" class="form-label">URLs to Crawl</label>
+                                        <textarea class="form-control" id="multiple-urls" name="urls" rows="4" placeholder="https://example.com&#10;https://another-site.com" required></textarea>
+                                        <div class="form-text">Enter one URL per line.</div>
                                     </div>
-                                    <div id="download-files-description" style="display: none;">
-                                        Find and download files (like PDFs, documents, etc.) from a website. Useful for collecting documents or resources.
+                                    
+                                    <div class="mb-3">
+                                        <label for="multiple-output-dir" class="form-label">Output Directory</label>
+                                        <input type="text" class="form-control" id="multiple-output-dir" name="output_dir" value="./results">
+                                        <div class="form-text">Where to save the crawled content.</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Deep Crawl -->
+                                <div class="tab-pane fade" id="deep" role="tabpanel" aria-labelledby="deep-tab">
+                                    <h5 class="card-title">Deep Crawl</h5>
+                                    <p class="card-text text-muted">Follow links within a website to crawl multiple pages.</p>
+                                    
+                                    <input type="hidden" name="crawl_type" value="deep">
+                                    
+                                    <div class="mb-3">
+                                        <label for="deep-url" class="form-label">Starting URL</label>
+                                        <input type="url" class="form-control" id="deep-url" name="url" placeholder="https://example.com" required>
+                                        <div class="form-text">Where to start crawling from.</div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="max-depth" class="form-label">Max Depth</label>
+                                                <input type="number" class="form-control" id="max-depth" name="max_depth" value="2" min="1" max="5">
+                                                <div class="form-text">How many links to follow.</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="max-pages" class="form-label">Max Pages</label>
+                                                <input type="number" class="form-control" id="max-pages" name="max_pages" value="10" min="1" max="50">
+                                                <div class="form-text">Maximum number of pages to crawl.</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3 form-check">
+                                        <input type="checkbox" class="form-check-input" id="stay-within-domain" name="stay_within_domain" checked>
+                                        <label class="form-check-label" for="stay-within-domain">Stay within the same domain</label>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="deep-output-dir" class="form-label">Output Directory</label>
+                                        <input type="text" class="form-control" id="deep-output-dir" name="output_dir" value="./deep_results">
+                                        <div class="form-text">Where to save the crawled content.</div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Download Files -->
+                                <div class="tab-pane fade" id="files" role="tabpanel" aria-labelledby="files-tab">
+                                    <h5 class="card-title">Download Files</h5>
+                                    <p class="card-text text-muted">Find and download specific file types from a website.</p>
+                                    
+                                    <input type="hidden" name="crawl_type" value="files">
+                                    
+                                    <div class="mb-3">
+                                        <label for="files-url" class="form-label">Website URL</label>
+                                        <input type="url" class="form-control" id="files-url" name="url" placeholder="https://example.com" required>
+                                        <div class="form-text">Website to search for files.</div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="file-types" class="form-label">File Types</label>
+                                        <input type="text" class="form-control" id="file-types" name="file_types" value="pdf,doc,docx,xls,xlsx,ppt,pptx">
+                                        <div class="form-text">Comma-separated list of file extensions to download.</div>
+                                    </div>
+                                    
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="max-size" class="form-label">Max File Size (MB)</label>
+                                                <input type="number" class="form-control" id="max-size" name="max_size" value="100" min="1">
+                                                <div class="form-text">Maximum file size to download.</div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="max-files" class="form-label">Max Files</label>
+                                                <input type="number" class="form-control" id="max-files" name="max_files" value="10" min="1">
+                                                <div class="form-text">Maximum number of files to download.</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label for="files-output-dir" class="form-label">Output Directory</label>
+                                        <input type="text" class="form-control" id="files-output-dir" name="output_dir" value="./downloads">
+                                        <div class="form-text">Where to save the downloaded files.</div>
                                     </div>
                                 </div>
                             </div>
-
+                            
                             <!-- Common Options -->
-                            <div class="mb-3">
-                                <label for="url" class="form-label">URL:</label>
-                                <input type="url" id="url" name="url" class="form-control" placeholder="https://example.com" required>
-                                <div class="form-text">The website URL to crawl</div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="outputDir" class="form-label">Output Directory:</label>
-                                <input type="text" id="outputDir" name="output_dir" class="form-control" value="./crawl_results">
-                                <div class="form-text">Local directory where crawl results will be saved</div>
-                            </div>
-
-                            <div class="mb-3">
-                                <label for="format" class="form-label">Output Format:</label>
-                                <select id="format" name="format" class="form-select">
-                                    <option value="markdown">Markdown</option>
-                                    <option value="html">HTML</option>
-                                    <option value="text">Plain Text</option>
-                                    <option value="json">JSON</option>
-                                </select>
-                                <div class="form-text">Format for saving the crawled content</div>
-                            </div>
-
-                            <div class="form-check mb-3">
-                                <input type="checkbox" id="browser" name="browser" class="form-check-input">
-                                <label for="browser" class="form-check-label">Use Browser-based Crawling</label>
-                                <div class="form-text">Enable for JavaScript-heavy websites that require a browser to render content</div>
-                            </div>
-
-                            <div class="form-check mb-3">
-                                <input type="checkbox" id="includeImages" name="include_images" class="form-check-input" checked>
-                                <label for="includeImages" class="form-check-label">Include Images</label>
-                                <div class="form-text">Include image descriptions in the output</div>
-                            </div>
-
-                            <div class="form-check mb-3">
-                                <input type="checkbox" id="includeLinks" name="include_links" class="form-check-input" checked>
-                                <label for="includeLinks" class="form-check-label">Include Links</label>
-                                <div class="form-text">Include hyperlinks in the output</div>
-                            </div>
-
-                            <!-- Deep Crawl Options (initially hidden) -->
-                            <div id="deepCrawlOptions" class="command-section">
-                                <hr>
-                                <h5>Deep Crawl Options</h5>
-                                
-                                <div class="mb-3">
-                                    <label for="maxDepth" class="form-label">Maximum Depth:</label>
-                                    <input type="number" id="maxDepth" name="max_depth" class="form-control" value="2" min="1" max="10">
-                                    <div class="form-text">How many links deep to crawl (1 = only the provided URL)</div>
+                            <hr>
+                            <h6>Common Options</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="format" class="form-label">Output Format</label>
+                                        <select class="form-select" id="format" name="format">
+                                            <option value="markdown" selected>Markdown</option>
+                                            <option value="html">HTML</option>
+                                            <option value="text">Plain Text</option>
+                                            <option value="json">JSON</option>
+                                        </select>
+                                    </div>
                                 </div>
-
-                                <div class="mb-3">
-                                    <label for="maxPages" class="form-label">Maximum Pages:</label>
-                                    <input type="number" id="maxPages" name="max_pages" class="form-control" value="10" min="1" max="100">
-                                    <div class="form-text">Maximum number of pages to crawl</div>
-                                </div>
-
-                                <div class="form-check mb-3">
-                                    <input type="checkbox" id="stayWithinDomain" name="stay_within_domain" class="form-check-input" checked>
-                                    <label for="stayWithinDomain" class="form-check-label">Stay Within Domain</label>
-                                    <div class="form-text">Only follow links within the same domain</div>
+                                <div class="col-md-6">
+                                    <div class="mb-3 form-check mt-4">
+                                        <input type="checkbox" class="form-check-input" id="use-browser" name="use_browser">
+                                        <label class="form-check-label" for="use-browser">Use browser-based crawling</label>
+                                    </div>
                                 </div>
                             </div>
-
-                            <!-- Multiple URLs Options (initially hidden) -->
-                            <div id="multipleUrlsOptions" class="command-section">
-                                <hr>
-                                <h5>Multiple URLs Options</h5>
-                                
-                                <div class="mb-3">
-                                    <label for="additionalUrls" class="form-label">Additional URLs:</label>
-                                    <textarea id="additionalUrls" name="additional_urls" class="form-control" rows="4" placeholder="Enter one URL per line"></textarea>
-                                    <div class="form-text">Enter additional URLs to crawl (one per line)</div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3 form-check">
+                                        <input type="checkbox" class="form-check-input" id="include-images" name="include_images" checked>
+                                        <label class="form-check-label" for="include-images">Include images</label>
+                                    </div>
                                 </div>
-
-                                <div class="mb-3">
-                                    <label for="concurrent" class="form-label">Concurrent Crawls:</label>
-                                    <input type="number" id="concurrent" name="concurrent" class="form-control" value="5" min="1" max="20">
-                                    <div class="form-text">Number of URLs to crawl simultaneously</div>
+                                <div class="col-md-6">
+                                    <div class="mb-3 form-check">
+                                        <input type="checkbox" class="form-check-input" id="include-links" name="include_links" checked>
+                                        <label class="form-check-label" for="include-links">Include hyperlinks</label>
+                                    </div>
                                 </div>
                             </div>
-
-                            <!-- Download Files Options (initially hidden) -->
-                            <div id="downloadFilesOptions" class="command-section">
-                                <hr>
-                                <h5>Download Files Options</h5>
-                                
-                                <div class="mb-3">
-                                    <label for="fileTypes" class="form-label">File Types:</label>
-                                    <input type="text" id="fileTypes" name="file_types" class="form-control" value="pdf,docx,xlsx" placeholder="pdf,docx,xlsx">
-                                    <div class="form-text">File extensions to download (comma-separated)</div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="maxFiles" class="form-label">Maximum Files:</label>
-                                    <input type="number" id="maxFiles" name="max_files" class="form-control" value="10" min="1" max="100">
-                                    <div class="form-text">Maximum number of files to download</div>
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="maxSize" class="form-label">Maximum Size (MB):</label>
-                                    <input type="number" id="maxSize" name="max_size" class="form-control" value="10" min="1" max="100">
-                                    <div class="form-text">Maximum file size in megabytes</div>
-                                </div>
-                            </div>
-
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-primary">Start Crawling</button>
-                            </div>
+                            
+                            <button type="submit" class="btn btn-success btn-crawl">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-play-fill me-2" viewBox="0 0 16 16">
+                                    <path d="m11.596 8.697-6.363 3.692c-.54.313-1.233-.066-1.233-.697V4.308c0-.63.692-1.01 1.233-.696l6.363 3.692a.802.802 0 0 1 0 1.393z"/>
+                                </svg>
+                                Start Crawling
+                            </button>
                         </form>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Results Section (Initially Hidden) -->
-        <div class="row mt-4" id="resultsSection" style="display: none;">
-            <div class="col-lg-8 mx-auto">
-                <div class="card bg-dark">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Crawl Results</h5>
-                        <button id="closeResults" class="btn btn-sm btn-outline-secondary">Close</button>
+        <!-- Features -->
+        <div class="row mb-5">
+            <h2 class="text-center mb-4">Features</h2>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" class="bi bi-globe" viewBox="0 0 16 16">
+                                <path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8zm7.5-6.923c-.67.204-1.335.82-1.887 1.855A7.97 7.97 0 0 0 5.145 4H7.5V1.077zM4.09 4a9.267 9.267 0 0 1 .64-1.539 6.7 6.7 0 0 1 .597-.933A7.025 7.025 0 0 0 2.255 4H4.09zm-.582 3.5c.03-.877.138-1.718.312-2.5H1.674a6.958 6.958 0 0 0-.656 2.5h2.49zM4.847 5a12.5 12.5 0 0 0-.338 2.5H7.5V5H4.847zM8.5 5v2.5h2.99a12.495 12.495 0 0 0-.337-2.5H8.5zM4.51 8.5a12.5 12.5 0 0 0 .337 2.5H7.5V8.5H4.51zm3.99 0V11h2.653c.187-.765.306-1.608.338-2.5H8.5zM5.145 12c.138.386.295.744.47 1.077.14.225.285.445.435.644.115.144.239.3.36.416A7 7 0 0 0 8 14.5c.631 0 1.217-.092 1.73-.24l.464-.164c.212-.104.413-.216.603-.337.115-.096.16-.132.257-.215A7.01 7.01 0 0 0 12.5 8c0-3.86-3.14-7-7-7s-7 3.14-7 7c0 1.763.786 3.33 1.996 4.423.115.083.16.119.275.215.145.145.335.35.598.556l.464.164c.93.156 1.18.24 1.8.24a7 7 0 0 0 1.6-.32c.121-.116.245-.272.36-.416.14-.199.287-.419.425-.604.075-.095.15-.189.22-.3.168-.333.315-.69.45-1.077.176-.387.34-.814.475-1.266A7.03 7.03 0 0 0 8.5 12c.527 0 1.04-.055 1.533-.16a7.95 7.95 0 0 0 .471-1.283.85.85 0 0 0 .366-.54A7.036 7.036 0 0 0 12.326 8.5h-2.49c-.03.877-.138 1.718-.312 2.5H6.485a13.73 13.73 0 0 1-.311-2.5h-2.49zm6.709-3.5a13.72 13.72 0 0 1 .31 2.5h2.49a6.982 6.982 0 0 0-.656-2.5h-2.144zm-.37-3.5a6.7 6.7 0 0 1 .597.933 9.267 9.267 0 0 1 .641 1.539h1.835a7.024 7.024 0 0 0-3.072-2.472zm.857 14.972-1.359-.702a7.03 7.03 0 0 0 1.077-.705c.313-.272.609-.577.87-.904a4.39 4.39 0 0 1-.86.752A7.011 7.011 0 0 1 8 15c-.63 0-1.218-.093-1.732-.243-.515-.153-1.01-.36-1.47-.623a5.522 5.522 0 0 1-.6-.538 6.116 6.116 0 0 1-.494-.584c-.202-.268-.387-.562-.552-.876a6.958 6.958 0 0 0 1.061.7z"/>
+                            </svg>
+                        </div>
+                        <h5 class="card-title">Simple Web Crawling</h5>
+                        <p class="card-text">Extract content from any web page with a simple click, no coding required.</p>
                     </div>
-                    <div class="card-body">
-                        <div id="resultsContent"></div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" class="bi bi-folder" viewBox="0 0 16 16">
+                                <path d="M.54 3.87.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.826a2 2 0 0 1-1.991-1.819l-.637-7a1.99 1.99 0 0 1 .342-1.31zM2.19 4a1 1 0 0 0-.996 1.09l.637 7a1 1 0 0 0 .995.91h10.348a1 1 0 0 0 .995-.91l.637-7A1 1 0 0 0 13.81 4H2.19zm4.69-1.707A1 1 0 0 0 6.172 2H2.5a1 1 0 0 0-1 .981l.006.139C1.72 3.042 1.95 3 2.19 3h5.396l-.707-.707z"/>
+                            </svg>
+                        </div>
+                        <h5 class="card-title">Custom Storage Location</h5>
+                        <p class="card-text">Save crawled content in your preferred location on your computer.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" class="bi bi-file-earmark-text" viewBox="0 0 16 16">
+                                <path d="M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5z"/>
+                                <path d="M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5L9.5 0zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z"/>
+                            </svg>
+                        </div>
+                        <h5 class="card-title">Multiple Output Formats</h5>
+                        <p class="card-text">Save content as Markdown, HTML, plain text, or structured JSON.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" class="bi bi-download" viewBox="0 0 16 16">
+                                <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                                <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                            </svg>
+                        </div>
+                        <h5 class="card-title">File Downloading</h5>
+                        <p class="card-text">Easily find and download PDFs, documents, and other files from websites.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" class="bi bi-layers" viewBox="0 0 16 16">
+                                <path d="M8.235 1.559a.5.5 0 0 0-.47 0l-7.5 4a.5.5 0 0 0 0 .882L3.188 8 .264 9.559a.5.5 0 0 0 0 .882l7.5 4a.5.5 0 0 0 .47 0l7.5-4a.5.5 0 0 0 0-.882L12.813 8l2.922-1.559a.5.5 0 0 0 0-.882l-7.5-4zm3.515 7.008L14.438 10 8 13.433 1.562 10 4.25 8.567l3.515 1.874a.5.5 0 0 0 .47 0l3.515-1.874zM8 9.433 1.562 6 8 2.567 14.438 6 8 9.433z"/>
+                            </svg>
+                        </div>
+                        <h5 class="card-title">Deep Crawling</h5>
+                        <p class="card-text">Follow links within a website to discover and extract connected content.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <div class="feature-icon">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" fill="currentColor" class="bi bi-terminal" viewBox="0 0 16 16">
+                                <path d="M6 9a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3A.5.5 0 0 1 6 9zM3.854 4.146a.5.5 0 1 0-.708.708L4.793 6.5 3.146 8.146a.5.5 0 1 0 .708.708l2-2a.5.5 0 0 0 0-.708l-2-2z"/>
+                                <path d="M2 1a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V3a2 2 0 0 0-2-2H2zm12 1a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h12z"/>
+                            </svg>
+                        </div>
+                        <h5 class="card-title">Command Line Option</h5>
+                        <p class="card-text">For advanced users, a powerful command-line interface is also available.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <hr>
+        
+        <!-- Help Section -->
+        <div class="row mt-5">
+            <div class="col-lg-8 offset-lg-2">
+                <h3 class="text-center mb-4">Need Help?</h3>
+                <div class="accordion" id="accordionHelp">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingOne">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="false" aria-controls="collapseOne">
+                                What is Easy Crawl4AI?
+                            </button>
+                        </h2>
+                        <div id="collapseOne" class="accordion-collapse collapse" aria-labelledby="headingOne" data-bs-parent="#accordionHelp">
+                            <div class="accordion-body">
+                                Easy Crawl4AI is a user-friendly tool that helps you extract content from websites without any technical knowledge. It's built on top of the powerful crawl4ai library, making web crawling accessible to everyone.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingTwo">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+                                Which crawling mode should I choose?
+                            </button>
+                        </h2>
+                        <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#accordionHelp">
+                            <div class="accordion-body">
+                                <ul>
+                                    <li><strong>Single URL:</strong> Best for extracting content from a specific page.</li>
+                                    <li><strong>Multiple URLs:</strong> Use when you have a list of pages to crawl.</li>
+                                    <li><strong>Deep Crawl:</strong> Ideal for exploring a website by following links.</li>
+                                    <li><strong>Download Files:</strong> Perfect for finding and downloading documents like PDFs from a website.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingThree">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+                                What output format should I choose?
+                            </button>
+                        </h2>
+                        <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#accordionHelp">
+                            <div class="accordion-body">
+                                <ul>
+                                    <li><strong>Markdown:</strong> Great for readable text with basic formatting (default).</li>
+                                    <li><strong>HTML:</strong> Preserves the original HTML structure of the page.</li>
+                                    <li><strong>Plain Text:</strong> Simple text without any formatting.</li>
+                                    <li><strong>JSON:</strong> Structured data format, useful for further processing.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingFour">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+                                When should I use browser-based crawling?
+                            </button>
+                        </h2>
+                        <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#accordionHelp">
+                            <div class="accordion-body">
+                                Use browser-based crawling for websites that:
+                                <ul>
+                                    <li>Have content loaded via JavaScript</li>
+                                    <li>Require user interaction to display content</li>
+                                    <li>Modern web applications or social media sites</li>
+                                </ul>
+                                Browser-based crawling is more accurate but slower than standard crawling.
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container text-center">
+            <p>
+                Easy Crawl4AI - A user-friendly wrapper for <a href="https://github.com/unclecode/crawl4ai" target="_blank" class="text-info">crawl4ai</a>
+            </p>
+            <p class="small text-muted">
+                This tool helps extract content from websites in a simple, non-technical way.
+            </p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Handle form submission based on active tab
         document.addEventListener('DOMContentLoaded', function() {
-            // Handle command type selection
-            const commandType = document.getElementById('commandType');
-            const descriptions = {
-                'crawl': document.getElementById('crawl-description'),
-                'deep-crawl': document.getElementById('deep-crawl-description'),
-                'crawl-multiple': document.getElementById('crawl-multiple-description'),
-                'download-files': document.getElementById('download-files-description')
-            };
+            const crawlTypeTabs = document.querySelectorAll('#crawlTypeTab button');
+            const form = document.querySelector('form');
             
-            const optionSections = {
-                'deep-crawl': document.getElementById('deepCrawlOptions'),
-                'crawl-multiple': document.getElementById('multipleUrlsOptions'),
-                'download-files': document.getElementById('downloadFilesOptions')
-            };
-            
-            commandType.addEventListener('change', function() {
-                // Update descriptions
-                Object.values(descriptions).forEach(desc => desc.style.display = 'none');
-                descriptions[this.value].style.display = 'block';
-                
-                // Update option sections
-                Object.values(optionSections).forEach(section => section.classList.remove('active'));
-                if (optionSections[this.value]) {
-                    optionSections[this.value].classList.add('active');
-                }
-            });
-            
-            // Form submission
-            const form = document.getElementById('crawlerForm');
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                // Show a loading message
-                const resultsSection = document.getElementById('resultsSection');
-                const resultsContent = document.getElementById('resultsContent');
-                resultsContent.innerHTML = '<div class="text-center"><div class="spinner-border text-primary" role="status"></div><p class="mt-2">Crawling in progress...</p></div>';
-                resultsSection.style.display = 'block';
-                
-                // Collect form data
-                const formData = new FormData(form);
-                
-                // For multiple URLs, add from textarea
-                if (commandType.value === 'crawl-multiple') {
-                    const additionalUrls = document.getElementById('additionalUrls').value;
-                    const urls = additionalUrls.split('\n').filter(url => url.trim());
-                    urls.forEach(url => formData.append('urls', url.trim()));
-                }
-                
-                // Send to server
-                fetch('/run_crawl', {
-                    method: 'POST',
-                    body: formData
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        resultsContent.innerHTML = `
-                            <div class="alert alert-success">
-                                <h4 class="alert-heading">Crawl Successful!</h4>
-                                <p>The crawl has been completed successfully. The results have been saved to the specified output directory.</p>
-                                <hr>
-                                <p class="mb-0">You can find your files in: <code>${formData.get('output_dir')}</code></p>
-                            </div>
-                            <div class="mt-3">
-                                <h5>Output:</h5>
-                                <pre class="bg-dark text-light p-3 rounded">${data.output}</pre>
-                            </div>
-                        `;
-                    } else {
-                        resultsContent.innerHTML = `
-                            <div class="alert alert-danger">
-                                <h4 class="alert-heading">Crawl Failed</h4>
-                                <p>There was an error during the crawling process:</p>
-                                <hr>
-                                <p class="mb-0">${data.error || data.message}</p>
-                            </div>
-                        `;
+            crawlTypeTabs.forEach(tab => {
+                tab.addEventListener('shown.bs.tab', function(event) {
+                    const targetId = event.target.getAttribute('id');
+                    let crawlType;
+                    
+                    switch(targetId) {
+                        case 'single-tab':
+                            crawlType = 'single';
+                            break;
+                        case 'multiple-tab':
+                            crawlType = 'multiple';
+                            break;
+                        case 'deep-tab':
+                            crawlType = 'deep';
+                            break;
+                        case 'files-tab':
+                            crawlType = 'files';
+                            break;
                     }
-                })
-                .catch(error => {
-                    resultsContent.innerHTML = `
-                        <div class="alert alert-danger">
-                            <h4 class="alert-heading">Error</h4>
-                            <p>There was an error communicating with the server:</p>
-                            <hr>
-                            <p class="mb-0">${error.message}</p>
-                        </div>
-                    `;
+                    
+                    if (crawlType) {
+                        const hiddenInput = form.querySelector('input[name="crawl_type"]');
+                        if (hiddenInput) {
+                            hiddenInput.value = crawlType;
+                        } else {
+                            const newInput = document.createElement('input');
+                            newInput.type = 'hidden';
+                            newInput.name = 'crawl_type';
+                            newInput.value = crawlType;
+                            form.appendChild(newInput);
+                        }
+                    }
                 });
-            });
-            
-            // Close results
-            document.getElementById('closeResults').addEventListener('click', function() {
-                document.getElementById('resultsSection').style.display = 'none';
             });
         });
     </script>

@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crawl Results - Easy Crawl4AI</title>
+    <link href="https://cdn.replit.com/agent/bootstrap-agent-dark-theme.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 2rem;
+            padding-bottom: 4rem;
+        }
+        .result-card {
+            margin-bottom: 1.5rem;
+        }
+        .truncate {
+            max-height: 100px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            position: relative;
+        }
+        .truncate::after {
+            content: "...";
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            background-color: var(--bs-dark);
+            padding: 0 5px;
+        }
+        .file-path {
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header class="mb-4">
+            <h1>Crawl Results</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Home</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Results</li>
+                </ol>
+            </nav>
+        </header>
+
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <!-- Summary -->
+        <div class="alert alert-success">
+            {% if crawl_type == 'files' %}
+                <h5 class="alert-heading">Files Downloaded Successfully!</h5>
+                <p>Downloaded {{ output_files|length }} files to: <strong>{{ output_dir }}</strong></p>
+            {% else %}
+                <h5 class="alert-heading">Crawling Completed Successfully!</h5>
+                <p>
+                    {% if crawl_type == 'single' %}
+                        Crawled 1 web page
+                    {% elif crawl_type == 'multiple' %}
+                        Crawled {{ results|length }} web pages
+                    {% elif crawl_type == 'deep' %}
+                        Deep crawled {{ results|length }} web pages
+                    {% endif %}
+                </p>
+                <p>Results saved to: <strong>{{ output_dir }}</strong></p>
+            {% endif %}
+        </div>
+
+        <div class="row">
+            <!-- Output Files -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Output Files</h5>
+                    </div>
+                    <div class="card-body">
+                        <p class="card-text">The following files were created:</p>
+                        <ul class="list-group">
+                            {% for file_path in output_files %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span class="file-path">{{ file_path.split('/')[-1] }}</span>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <a href="{{ url_for('view_file', filename=file_path.split('/')[-1]) }}" class="btn btn-outline-primary">View</a>
+                                        <a href="{{ url_for('download_file', filename=file_path.split('/')[-1]) }}" class="btn btn-outline-info">Download</a>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    <div class="card-footer text-end">
+                        <a href="/" class="btn btn-primary">Crawl Again</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Preview -->
+            <div class="col-md-8">
+                {% if crawl_type != 'files' %}
+                    <h4>Content Preview</h4>
+                    {% for result in results %}
+                        <div class="card result-card">
+                            <div class="card-header">
+                                <h5 class="card-title mb-0">{{ result.title|default('No Title') }}</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted">{{ result.url }}</p>
+                                
+                                <div class="mb-3">
+                                    <strong>Stats:</strong>
+                                    <ul class="list-inline">
+                                        <li class="list-inline-item">Words: {{ result.text.split()|length }}</li>
+                                        <li class="list-inline-item">Links: {{ result.links|default([])|length }}</li>
+                                        <li class="list-inline-item">Images: {{ result.images|default([])|length }}</li>
+                                    </ul>
+                                </div>
+                                
+                                <h6>Content Preview:</h6>
+                                <div class="truncate bg-dark p-2 rounded">
+                                    <pre>{{ result.text|default('No content')|truncate(300) }}</pre>
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Files Downloaded</h5>
+                            <p>The files have been successfully downloaded to: <code>{{ output_dir }}</code></p>
+                            <p>You can view or download individual files from the list on the left.</p>
+                            
+                            <div class="alert alert-info">
+                                <h6 class="alert-heading">Working with Downloaded Files</h6>
+                                <ul>
+                                    <li>Use the "View" button to open files directly in the browser (where supported)</li>
+                                    <li>Use the "Download" button to save files to your local computer</li>
+                                </ul>
+                            </div>
+                            
+                            <div class="text-center mt-4">
+                                <a href="/" class="btn btn-primary btn-lg">Crawl More Files</a>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
